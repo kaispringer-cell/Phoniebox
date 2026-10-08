@@ -43,12 +43,7 @@ document.querySelectorAll('[data-action]').forEach(button => button.addEventList
 }));
 $('volume').addEventListener('input', () => $('volume-value').textContent=$('volume').value+' %');
 $('volume').addEventListener('change', async () => {try {await api('/api/player/volume',{volume:$('volume').value});} catch(e){feedback(e.message);}});
-function clearCardSearch() {
-  $('card-search').value='';
-  $('card-search-status').textContent='';
-  $('card-search-results').hidden=true;
-  $('card-search-results').textContent='';
-}
+let clearCardSearch=()=>{};
 function cardFields() {
   const action=$('card-action').value;
   $('card-name').required=action==='music';
@@ -76,52 +71,129 @@ function loadCard(card) {
 $('card-action').addEventListener('change',cardFields);
 cardFields();
 const searchLabels={track:'Titel',album:'Album',playlist:'Playlist'};
-function renderCardSearchResults(items) {
-  const box=$('card-search-results');
-  box.textContent='';
-  box.hidden=!items.length;
-  $('card-search-status').textContent=items.length ? '' : 'Nichts gefunden.';
-  items.forEach(item=>{
-    const article=document.createElement('article'); article.className='card';
-    if (item.image) { const img=document.createElement('img'); img.src=item.image; img.alt=''; img.className='thumb'; article.appendChild(img); }
-    const info=document.createElement('div');
-    const h3=document.createElement('h3'); h3.textContent=item.name; info.appendChild(h3);
-    const p=document.createElement('p'); p.className='uri';
-    p.textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
-    info.appendChild(p);
-    article.appendChild(info);
-    const actions=document.createElement('div'); actions.className='actions';
-    const button=document.createElement('button'); button.type='button'; button.textContent='Übernehmen';
-    button.addEventListener('click',()=>{
-      $('card-uri').value=item.uri;
-      if (!$('card-name').value.trim()) $('card-name').value=item.name;
-      clearCardSearch();
+// Spotify search with results to pick from; used by the card form and the "Neue Karte" dialog.
+function spotifySearch(ids, pick) {
+  let timer, token=0;
+  const clear=()=>{ clearTimeout(timer); token++; $(ids.query).value=''; $(ids.status).textContent=''; $(ids.results).hidden=true; $(ids.results).textContent=''; };
+  function render(items) {
+    const box=$(ids.results);
+    box.textContent='';
+    box.hidden=!items.length;
+    $(ids.status).textContent=items.length ? '' : 'Nichts gefunden.';
+    items.forEach(item=>{
+      const article=document.createElement('article'); article.className='card';
+      if (item.image) { const img=document.createElement('img'); img.src=item.image; img.alt=''; img.className='thumb'; article.appendChild(img); }
+      const info=document.createElement('div');
+      const h3=document.createElement('h3'); h3.textContent=item.name; info.appendChild(h3);
+      const p=document.createElement('p'); p.className='uri';
+      p.textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
+      info.appendChild(p);
+      article.appendChild(info);
+      const actions=document.createElement('div'); actions.className='actions';
+      const button=document.createElement('button'); button.type='button'; button.textContent='Übernehmen';
+      button.addEventListener('click',()=>pick(item));
+      actions.appendChild(button); article.appendChild(actions);
+      box.appendChild(article);
     });
-    actions.appendChild(button); article.appendChild(actions);
-    box.appendChild(article);
-  });
+  }
+  function run(delay) {
+    clearTimeout(timer);
+    const query=$(ids.query).value.trim();
+    $(ids.results).hidden=true; $(ids.results).textContent='';
+    if (query.length<2) { $(ids.status).textContent=''; return; }
+    $(ids.status).textContent='Suche läuft …';
+    timer=setTimeout(async ()=>{
+      const current=++token;
+      try {
+        const type=$(ids.type).value;
+        const r=await api('/api/spotify/search?q='+encodeURIComponent(query)+(type ? '&type='+encodeURIComponent(type) : ''));
+        if (current!==token) return; // a newer search has started meanwhile
+        render(r.results);
+      } catch(e) { if (current===token) $(ids.status).textContent=e.message; }
+    },delay);
+  }
+  $(ids.query).addEventListener('input',()=>run(400));
+  $(ids.type).addEventListener('change',()=>run(0));
+  return clear;
 }
-let cardSearchTimer, cardSearchToken=0;
-function runCardSearch(delay) {
-  clearTimeout(cardSearchTimer);
-  const query=$('card-search').value.trim();
-  $('card-search-results').hidden=true; $('card-search-results').textContent='';
-  if (query.length<2) { $('card-search-status').textContent=''; return; }
-  $('card-search-status').textContent='Suche läuft …';
-  cardSearchTimer=setTimeout(async ()=>{
-    const token=++cardSearchToken;
-    try {
-      const type=$('card-search-type').value;
-      const r=await api('/api/spotify/search?q='+encodeURIComponent(query)+(type ? '&type='+encodeURIComponent(type) : ''));
-      if (token!==cardSearchToken) return; // a newer search has started meanwhile
-      renderCardSearchResults(r.results);
-    } catch(e) { if (token===cardSearchToken) $('card-search-status').textContent=e.message; }
-  },delay);
-}
-$('card-search').addEventListener('input',()=>runCardSearch(400));
-$('card-search-type').addEventListener('change',()=>runCardSearch(0));
+clearCardSearch=spotifySearch(
+  {query:'card-search',type:'card-search-type',status:'card-search-status',results:'card-search-results'},
+  item=>{ $('card-uri').value=item.uri; if (!$('card-name').value.trim()) $('card-name').value=item.name; clearCardSearch(); }
+);
 $('learn').addEventListener('click',async () => {try {await api('/api/learn',{}); loadCard(null); $('uid').value=''; $('card-name').value=''; $('card-uri').value=''; $('learn-status').textContent='Jetzt Karte auflegen. 60 Sekunden Zeit; Musik bleibt beim Anlernen aus.';}catch(e){feedback(e.message);}});
 $('cancel-learn').addEventListener('click',async () => {try {await api('/api/learn/cancel',{}); $('learn-status').textContent='Anlernen beendet.';}catch(e){feedback(e.message);}});
+// "Neue Karte": wait for a card in silent learn mode, then search Spotify and save the card.
+// The M301 reader cannot write to cards, so the card's ID is linked to the chosen music.
+const newCard={uid:'', waiting:false, timer:null};
+function newCardStep(step) {
+  ['scan','search','save'].forEach(name=>{
+    $('nc-'+name).hidden=name!==step;
+    if (name===step) $('nc-mark-'+name).setAttribute('aria-current','step'); else $('nc-mark-'+name).removeAttribute('aria-current');
+  });
+}
+const clearNewCardSearch=spotifySearch(
+  {query:'nc-query',type:'nc-type',status:'nc-search-status',results:'nc-results'},
+  item=>{
+    $('nc-form-uri').value=item.uri;
+    $('nc-name').value=item.name;
+    $('nc-pick-name').textContent=item.name;
+    $('nc-pick-info').textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
+    $('nc-thumb').hidden=!item.image;
+    if (item.image) $('nc-thumb').src=item.image; else $('nc-thumb').removeAttribute('src');
+    newCardStep('save');
+    $('nc-name').focus();
+  }
+);
+async function newCardWait() {
+  clearTimeout(newCard.timer);
+  newCard.uid=''; newCard.waiting=true;
+  $('nc-retry').hidden=true;
+  $('nc-scan-status').textContent='Bitte jetzt die neue NFC-Karte auf die Phoniebox legen.';
+  newCardStep('scan');
+  try { await api('/api/learn',{}); }
+  catch(e) { newCard.waiting=false; $('nc-scan-status').textContent=e.message; $('nc-retry').hidden=false; return; }
+  const poll=async()=>{
+    if (!newCard.waiting) return;
+    try {
+      const h=await api('/api/hardware');
+      if (!newCard.waiting) return;
+      if (h.learned) {
+        newCard.waiting=false; newCard.uid=h.learned;
+        // The ID is captured; the box plays cards normally again from here on.
+        api('/api/learn/cancel',{}).catch(()=>{});
+        $('nc-form-uid').value=h.learned;
+        $('nc-uid').textContent=h.card
+          ? 'Karte '+h.learned+' erkannt. Sie startet bisher „'+h.card.name+'“; die neue Auswahl ersetzt das.'
+          : 'Karte '+h.learned+' erkannt. Jetzt die Musik für diese Karte suchen.';
+        clearNewCardSearch();
+        newCardStep('search');
+        $('nc-query').focus();
+        return;
+      }
+      if (!h.learning) {
+        newCard.waiting=false;
+        $('nc-scan-status').textContent='Keine Karte erkannt. Reader-Status: '+h.reader+'.';
+        $('nc-retry').hidden=false;
+        return;
+      }
+    } catch(e) { $('nc-scan-status').textContent=e.message; }
+    newCard.timer=setTimeout(poll,800);
+  };
+  poll();
+}
+$('new-card-open').addEventListener('click',()=>{
+  $('nc-form-uid').value=''; $('nc-form-uri').value=''; $('nc-name').value='';
+  clearNewCardSearch();
+  $('new-card').showModal();
+  newCardWait();
+});
+$('nc-retry').addEventListener('click',newCardWait);
+$('nc-back').addEventListener('click',()=>{ newCardStep('search'); $('nc-query').focus(); });
+$('new-card-close').addEventListener('click',()=>$('new-card').close());
+$('new-card').addEventListener('close',()=>{
+  clearTimeout(newCard.timer);
+  if (newCard.waiting) { newCard.waiting=false; api('/api/learn/cancel',{}).catch(()=>{}); }
+});
 document.querySelectorAll('.edit-card').forEach(button=>button.addEventListener('click',()=>{
   loadCard({action:button.dataset.cardAction,value:Number(button.dataset.value),station:button.dataset.station});
   $('uid').value=button.dataset.uid; $('card-name').value=button.dataset.name; $('card-uri').value=button.dataset.uri; $('uid').scrollIntoView({block:'center'}); $('card-name').focus();

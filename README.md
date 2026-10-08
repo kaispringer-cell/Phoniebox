@@ -2,7 +2,7 @@
 
 Musikbox für den Raspberry Pi: NFC-Karten starten Spotify-Inhalte, eine Weboberfläche verwaltet Karten, Radio, Wecker und Einstellungen. Die Ausgabe läuft über den analogen 3,5-mm-Klinkenanschluss.
 
-- Version: siehe `VERSION` (aktuell 1.18.3)
+- Version: siehe `VERSION` (aktuell 1.19.0)
 - Änderungen: [CHANGELOG.md](CHANGELOG.md)
 - Technischer Aufbau, Datenmodell, Update-Paket: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md)
 
@@ -80,6 +80,8 @@ Danach kann der Tunnel geschlossen werden. Im Alltag genügt `https://phoniebox.
 Unter **NFC-Karten** eine Karte auflegen: ID und vorhandene Zuordnung erscheinen automatisch im Formular. Name und Aktion wählen, bei Musik den Spotify-Link, bei Radio den Sender eintragen, speichern.
 
 - Der Spotify-Link darf eine `open.spotify.com`-Adresse oder eine `spotify:`-URI sein (Playlist, Album, Titel, Folge). Alternativ direkt im Formular „Spotify durchsuchen“ nutzen: Typ (Titel, Album, Playlist oder Alles) wählen, Suchbegriff eingeben, **Übernehmen** trägt Link (und Name, falls noch leer) automatisch ein. Die Suche braucht eine verbundene Spotify-Web-API-Anmeldung.
+- **+ Neue Karte** führt in drei Schritten durch das Anlegen einer Musik-Karte: Karte auflegen (still, 60 Sekunden Zeit), in Spotify nach Album, Playlist oder Titel suchen und auswählen, Name prüfen und speichern. Ist die Karte schon belegt, sagt der Dialog womit; Speichern ersetzt die alte Zuordnung.
+- Der Reader M301 kann Karten nur lesen, nicht beschreiben. Gespeichert wird deshalb die Kartennummer (UID) zusammen mit der Musik in der Datenbank der Box; die Karte selbst bleibt unverändert. Eine Karte funktioniert also nur an der Phoniebox, an der sie angelernt wurde (oder nach Wiederherstellung einer Sicherung).
 - **Karte ohne Wiedergabe erfassen** schaltet für 60 Sekunden in den stillen Anlernmodus: aufgelegte Karten starten dann keine Musik.
 - **Radiosender-Karte:** Aktion „Radiosender starten“ und einen der Sender (WDR, 1LIVE, Deutschlandfunk, BBC international) wählen. Beim Auflegen wird Spotify getrennt und der Sender spielt über den Hauptausgang. Der Name ist optional, sonst wird der Sendername übernommen. Läuft schon etwas Lokales (Radio oder Ton), bleibt dessen Lautstärke, sonst gilt die Startlautstärke aus den Einstellungen. Dieselbe Karte erneut beendet den Sender; bei „Musik erneut starten“ startet er neu. Eine Musik-Karte danach startet ihre Musik ganz normal.
 - Steuerkarten und Radiosender-Karten brauchen keinen Namen. Bei Lautstärkeaktionen gibt es einen Schritt beziehungsweise Zielwert in Prozentpunkten.
