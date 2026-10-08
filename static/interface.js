@@ -2,6 +2,8 @@
   const root = document.documentElement;
   const themeButton = document.getElementById('theme-toggle');
   const media = window.matchMedia('(prefers-color-scheme: dark)');
+  // Nur in der Android-App vorhanden: Brücke zu Menü und Statusleiste.
+  const app = window.PhonieboxApp;
   let preference = null;
   try { preference = localStorage.getItem('phoniebox-theme'); } catch (_) {}
   const applyTheme = () => {
@@ -9,6 +11,8 @@
     root.dataset.theme = dark ? 'dark' : 'light';
     themeButton.textContent = dark ? '☀ Hell' : '☾ Dunkel';
     themeButton.setAttribute('aria-label', dark ? 'Hellen Modus aktivieren' : 'Dunklen Modus aktivieren');
+    // In der Android-App färbt die App ihre Statusleiste passend ein.
+    if (app) app.setTheme(dark);
   };
   applyTheme();
   themeButton.hidden = false;
@@ -18,6 +22,11 @@
     applyTheme();
   });
   media.addEventListener('change', applyTheme);
+  const appButton = document.getElementById('app-menu');
+  if (app && appButton) {
+    appButton.hidden = false;
+    appButton.addEventListener('click', () => app.openMenu());
+  }
 
   const links = [...document.querySelectorAll('nav[aria-label="Bereiche"] a')];
   const panels = [...document.querySelectorAll('[data-view]')];

@@ -1,3 +1,8 @@
+# 1.20.1
+
+- „kannst du dem wrapper oben die menüzeile nehmen und einen steuerungsbutton in die seite einbauen“ – Die Kopfzeile der Weboberfläche hat einen Button ☰, der nur in der Android-App erscheint (ab App-Version 1.1.0) und dort das App-Menü öffnet: Status prüfen, Benachrichtigungen an/aus, Neu laden, Zertifikat neu bestätigen. Außerdem meldet die Seite der App, ob sie hell oder dunkel ist, damit die Statusleiste des Handys dieselbe Farbe bekommt. Im Browser ändert sich nichts.
+- 1 neuer Test. Installer 2.8.18 weiterverwenden.
+
 # 1.20.0
 
 - „Dann bauen wir jetzt eine Android-App aus der Webseite. Feature soll mit eingebaut werden: Benachrichtigungen. z.B. Bluetooth nicht verbunden.“ – Neue Android-App im Ordner `android/` (eigene Version, siehe `android/CHANGELOG.md`). Auf dem Pi dafür:

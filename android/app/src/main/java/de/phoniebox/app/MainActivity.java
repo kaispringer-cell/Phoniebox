@@ -14,10 +14,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.webkit.JavascriptInterface;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -37,15 +37,13 @@ import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Zeigt die Weboberfläche der Phoniebox und gleicht dabei die Benachrichtigungen ab. */
+/**
+ * Zeigt die Weboberfläche der Phoniebox ohne eigene Menüleiste und gleicht dabei die
+ * Benachrichtigungen ab. Die Seite (ab App 1.20.1 auf dem Pi) zeigt den Button ☰ für das App-Menü.
+ */
 public class MainActivity extends Activity {
     /** Solange die App offen ist, so oft nachsehen. */
     private static final long FOREGROUND_INTERVAL = 30_000L;
-
-    private static final int MENU_RELOAD = 1;
-    private static final int MENU_CHECK = 2;
-    private static final int MENU_NOTIFY = 3;
-    private static final int MENU_CERTIFICATE = 4;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService background = Executors.newSingleThreadExecutor();
@@ -91,6 +89,7 @@ public class MainActivity extends Activity {
         // Ohne WebChromeClient liefert confirm() in der Weboberfläche stumm "false".
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new BoxClient());
+        web.addJavascriptInterface(new Bridge(), "PhonieboxApp");
 
         if (state != null) {
             web.restoreState(state);
@@ -136,51 +135,93 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        menu.add(Menu.NONE, MENU_RELOAD, 1, "Neu laden");
-        menu.add(Menu.NONE, MENU_CHECK, 2, "Status jetzt prüfen");
-        menu.add(Menu.NONE, MENU_NOTIFY, 3, "Benachrichtigungen").setCheckable(true);
-        menu.add(Menu.NONE, MENU_CERTIFICATE, 4, "Zertifikat neu bestätigen");
-        return true;
+    /** Das App-Menü. Geöffnet über den Button ☰ oben in der Weboberfläche oder auf der Fehlerseite. */
+    private void showMenu() {
+        boolean enabled = Box.notificationsEnabled(this);
+        String[] items = {
+                "Status jetzt prüfen",
+                enabled ? "Benachrichtigungen ausschalten" : "Benachrichtigungen einschalten",
+                "Neu laden",
+                "Zertifikat neu bestätigen",
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("Phoniebox-App " + appVersion())
+                .setItems(items, (d, which) -> {
+                    switch (which) {
+                        case 0:
+                            check(true);
+                            break;
+                        case 1:
+                            setNotifications(!enabled);
+                            break;
+                        case 2:
+                            reload();
+                            break;
+                        default:
+                            Box.clearPin(this);
+                            web.clearSslPreferences();
+                            reload();
+                    }
+                })
+                .show();
     }
 
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(MENU_NOTIFY).setChecked(Box.notificationsEnabled(this));
-        return true;
+    private String appVersion() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "";
+        }
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case MENU_RELOAD:
-                reload();
-                return true;
-            case MENU_CHECK:
-                check(true);
-                return true;
-            case MENU_NOTIFY:
-                boolean enable = !Box.notificationsEnabled(this);
-                Box.prefs(this).edit().putBoolean(Box.NOTIFY, enable).apply();
-                if (enable) {
-                    StatusJob.schedule(this);
-                    askForNotificationPermission();
-                    check(false);
-                } else {
-                    StatusJob.cancel(this);
-                    Notifier.clear(this);
+    private void setNotifications(boolean enable) {
+        Box.prefs(this).edit().putBoolean(Box.NOTIFY, enable).apply();
+        if (enable) {
+            StatusJob.schedule(this);
+            askForNotificationPermission();
+            check(false);
+        } else {
+            StatusJob.cancel(this);
+            Notifier.clear(this);
+        }
+        Toast.makeText(this, enable ? "Benachrichtigungen an" : "Benachrichtigungen aus",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    /** Status- und Navigationsleiste in der Farbe der Seite. */
+    private void applyBarColors(boolean dark) {
+        int color = Color.parseColor(dark ? "#101C1B" : "#F4F6F4");
+        Window window = getWindow();
+        window.setStatusBarColor(color);
+        window.setNavigationBarColor(color);
+        int flags = window.getDecorView().getSystemUiVisibility();
+        int light = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        window.getDecorView().setSystemUiVisibility(dark ? flags & ~light : flags | light);
+    }
+
+    /** Nur für Seiten der Box: der Button ☰ und das Farbschema der Weboberfläche. */
+    private final class Bridge {
+        @JavascriptInterface
+        public void openMenu() {
+            runOnUiThread(() -> {
+                if (fromBox()) {
+                    showMenu();
                 }
-                Toast.makeText(this, enable ? "Benachrichtigungen an" : "Benachrichtigungen aus",
-                        Toast.LENGTH_SHORT).show();
-                return true;
-            case MENU_CERTIFICATE:
-                Box.clearPin(this);
-                web.clearSslPreferences();
-                reload();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+            });
+        }
+
+        @JavascriptInterface
+        public void setTheme(boolean dark) {
+            runOnUiThread(() -> {
+                if (fromBox()) {
+                    applyBarColors(dark);
+                }
+            });
+        }
+
+        private boolean fromBox() {
+            String url = web.getUrl();
+            return url != null && Box.HOST.equals(Uri.parse(url).getHost());
         }
     }
 
@@ -245,9 +286,13 @@ public class MainActivity extends Activity {
         Button retry = new Button(this);
         retry.setText("Erneut versuchen");
         retry.setOnClickListener(v -> reload());
+        Button menu = new Button(this);
+        menu.setText("Menü");
+        menu.setOnClickListener(v -> showMenu());
         panel.addView(title);
         panel.addView(errorText);
         panel.addView(retry);
+        panel.addView(menu);
         return panel;
     }
 

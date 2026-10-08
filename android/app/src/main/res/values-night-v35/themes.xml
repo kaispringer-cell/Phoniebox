@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Bis die Seite ihr Farbschema meldet, dem Dunkelmodus des Handys folgen. -->
+    <style name="Theme.Phoniebox" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">#101C1B</item>
+        <item name="android:colorPrimaryDark">#101C1B</item>
+        <item name="android:colorAccent">#9FE4C2</item>
+        <item name="android:windowBackground">#101C1B</item>
+        <item name="android:navigationBarColor">#101C1B</item>
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>
