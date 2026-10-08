@@ -1,6 +1,7 @@
 (() => {
   const root = document.documentElement;
   const themeButton = document.getElementById('theme-toggle');
+  const themeLabel = document.getElementById('theme-label');
   const media = window.matchMedia('(prefers-color-scheme: dark)');
   // Nur in der Android-App vorhanden: Brücke zu Menü und Statusleiste.
   const app = window.PhonieboxApp;
@@ -9,7 +10,8 @@
   const applyTheme = () => {
     const dark = preference ? preference === 'dark' : media.matches;
     root.dataset.theme = dark ? 'dark' : 'light';
-    themeButton.textContent = dark ? '☀ Hell' : '☾ Dunkel';
+    themeLabel.textContent = dark ? 'Hell' : 'Dunkel';
+    themeButton.title = dark ? 'Hell' : 'Dunkel';
     themeButton.setAttribute('aria-label', dark ? 'Hellen Modus aktivieren' : 'Dunklen Modus aktivieren');
     // In der Android-App färbt die App ihre Statusleiste passend ein.
     if (app) app.setTheme(dark);
@@ -22,15 +24,44 @@
     applyTheme();
   });
   media.addEventListener('change', applyTheme);
-  const appButton = document.getElementById('app-menu');
-  const appDialog = document.getElementById('app-dialog');
-  if (app && appButton) {
-    appButton.hidden = false;
+
+  // Seitenleiste: breit immer ausgeklappt (CSS), mittel als Symbolleiste, schmal versteckt.
+  // Ausgeklappt über breit/schmal hinweg legt sie sich über die Seite.
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('side-backdrop');
+  const toggles = [document.getElementById('side-toggle'), document.getElementById('side-open')];
+  const wide = window.matchMedia('(min-width: 1100px)');
+  const setOpen = open => {
+    open = open && !wide.matches;
+    root.classList.toggle('nav-open', open);
+    backdrop.hidden = !open;
+    toggles.forEach(button => {
+      button.setAttribute('aria-expanded', String(open));
+      button.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
+    });
+  };
+  toggles.forEach(button => button.addEventListener('click', () => setOpen(!root.classList.contains('nav-open'))));
+  backdrop.addEventListener('click', () => setOpen(false));
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') setOpen(false); });
+  wide.addEventListener('change', () => setOpen(false));
+  sidebar.querySelectorAll('nav a').forEach(link => link.addEventListener('click', () => setOpen(false)));
+
+  const panel = document.getElementById('app-panel');
+  if (app && panel) {
+    panel.hidden = false;
+    // In der Symbolleiste klappt das App-Symbol die Leiste aus.
+    document.getElementById('app-title').addEventListener('click', () => {
+      if (!wide.matches && !root.classList.contains('nav-open')) setOpen(true);
+    });
     // Ältere Apps (1.1.0) kennen nur ihr eigenes Menü.
-    if (!appDialog || typeof app.version !== 'function') {
-      appButton.addEventListener('click', () => app.openMenu());
+    if (typeof app.version !== 'function') {
+      const menu = document.getElementById('app-menu');
+      menu.hidden = false;
+      menu.addEventListener('click', () => app.openMenu());
     } else {
+      document.getElementById('app-controls').hidden = false;
       const status = document.getElementById('app-status');
+      const badge = document.getElementById('app-badge');
       const notify = document.getElementById('app-notify');
       const note = (cls, title, text) => {
         const p = document.createElement('p');
@@ -49,6 +80,8 @@
           status.replaceChildren(...(list.length
             ? list.map(n => note('notice error', n.title, n.text))
             : [note('notice', 'Alles in Ordnung', 'Die Box meldet gerade keine Probleme.')]));
+          badge.textContent = String(list.length);
+          badge.hidden = !list.length;
           app.checkNow();
         } catch (error) {
           status.replaceChildren(note('notice error', 'Status nicht abrufbar', error.message));
@@ -56,30 +89,31 @@
       };
       // Ab Android-App 1.3.0: Player in der Benachrichtigungsleiste.
       const player = document.getElementById('app-player');
-      const hasPlayer = player && typeof app.playerEnabled === 'function';
+      const hasPlayer = typeof app.playerEnabled === 'function';
       if (hasPlayer) {
         document.getElementById('app-player-row').hidden = false;
         player.addEventListener('change', () => app.setPlayer(player.checked));
       }
       // Ab Android-App 1.3.1: Hinweis, wenn Android die Benachrichtigungen blockiert.
       const blocked = document.getElementById('app-blocked');
-      const canAsk = blocked && typeof app.notificationsAllowed === 'function';
+      const canAsk = typeof app.notificationsAllowed === 'function';
       if (canAsk) document.getElementById('app-allow').addEventListener('click', () => app.openNotificationSettings());
-      appButton.addEventListener('click', () => {
-        if (canAsk) blocked.hidden = app.notificationsAllowed();
+      // Schalter zeigen den Stand der App; nach einem Ausflug in die Android-Einstellungen neu.
+      const sync = () => {
         notify.checked = app.notificationsEnabled();
         if (hasPlayer) player.checked = app.playerEnabled();
-        document.getElementById('app-version').textContent = 'Phoniebox-App ' + app.version();
-        appDialog.showModal();
-        loadStatus();
-      });
-      document.getElementById('app-dialog-close').addEventListener('click', () => appDialog.close());
+        if (canAsk) blocked.hidden = app.notificationsAllowed();
+      };
+      sync();
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
+      document.getElementById('app-version').textContent = 'Phoniebox-App ' + app.version();
       document.getElementById('app-check').addEventListener('click', loadStatus);
       notify.addEventListener('change', () => app.setNotifications(notify.checked));
       document.getElementById('app-reload').addEventListener('click', () => location.reload());
       document.getElementById('app-cert').addEventListener('click', () => {
         if (confirm('Zertifikat der Box neu bestätigen? Das ist nur nach einer Neuinstallation der Box nötig.')) app.resetCertificate();
       });
+      loadStatus();
     }
   }
 

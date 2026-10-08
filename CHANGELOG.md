@@ -1,3 +1,10 @@
+# 1.23.0
+
+- „Die Tabs möchte ich lieber in einer Seitenleiste. Dort soll sich das App-Steuerungsmenü nahtlos einfügen. Achte darauf, das verschiedene Bildschirmdemensionen beachtet werden und bei Bedarf gescrollt wird. Auch soll das Menü je nach Bildschirmgröße automatisch ausgeklappt werden.“ – Die Bereiche (Player, NFC-Karten, Radio, Wecker, Spotify, Bluetooth, Einstellungen) stehen jetzt mit Symbolen in einer Seitenleiste links, unten der Hell/Dunkel-Schalter.
+- Ab 1100 px Breite ist die Leiste immer ausgeklappt. Von 700 bis 1099 px zeigt sie nur die Symbole; ☰ klappt sie über die Seite aus. Schmaler (Handy) steckt sie hinter dem Button ☰ in der Kopfzeile. Ausgeklappt schließt sie nach der Wahl eines Bereichs, mit Tippen daneben oder Esc. Ist sie höher als der Bildschirm, scrollt sie für sich.
+- In der Android-App steht das App-Menü (Status der Box, Benachrichtigungen, Player in der Leiste, Status prüfen, Neu laden, Zertifikat) als Abschnitt „Phoniebox-App“ direkt in der Leiste statt in einem eigenen Dialog. Probleme der Box zeigt ein roter Zähler am App-Symbol. Im Browser erscheint der Abschnitt nicht.
+- Test angepasst. Installer 2.8.18 weiterverwenden.
+
 # 1.22.1
 
 - „Im Player steht in grün Willkommen. Dort soll, sobald ein Song gespielt wird, der Bandname erscheinen.“ – Die grüne Zeile über dem Titel zeigt jetzt den Interpreten, solange etwas läuft oder pausiert ist (bei Radio „Radio“). Die Zeile unter dem Titel entfällt dann, damit der Name nicht doppelt steht. Läuft nichts, steht dort wieder „Willkommen“.

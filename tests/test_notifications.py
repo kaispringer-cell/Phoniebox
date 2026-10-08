@@ -102,12 +102,17 @@ def test_notifications_api(monkeypatch):
         assert r.json['notifications'] == []
 
 
-def test_app_menu_button_is_hidden_outside_the_app():
+def test_app_menu_is_part_of_the_sidebar_and_hidden_outside_the_app():
     with TemporaryDirectory() as d:
         html = create_app(Path(d)).test_client().get('/', base_url='https://phoniebox.local').text
-        assert html.count('id="app-menu"') == 1
-        assert '<button id="app-menu" class="quiet" type="button" hidden' in html
-        assert html.count('<dialog id="app-dialog"') == 1 and 'id="app-notify"' in html
+        assert html.count('<aside id="sidebar"') == 1 and html.count('<nav aria-label="Bereiche">') == 1
+        sidebar = html[html.index('<aside id="sidebar"'):html.index('</aside>')]
+        for view in ('player', 'cards', 'radio', 'alarm', 'spotify', 'bluetooth', 'settings'):
+            assert f'href="#{view}"' in sidebar and f'data-view="{view}"' in html
+        assert '<section id="app-panel" class="side-app" hidden' in sidebar
+        assert 'id="app-notify"' in sidebar and 'id="theme-toggle"' in sidebar
+        assert '<button id="app-menu" class="quiet" type="button" hidden' in sidebar
+        assert '<dialog id="app-dialog"' not in html
     script = (Path(__file__).parent.parent / 'static' / 'interface.js').read_text()
     assert 'window.PhonieboxApp' in script and 'app.openMenu()' in script
 
