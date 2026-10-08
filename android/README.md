@@ -28,7 +28,7 @@ Ein Problem meldet die Box erst, wenn es 30 Sekunden anhält. Die App zeigt jede
 
 Die App fragt im Hintergrund etwa alle 15 Minuten nach (häufiger lässt Android das ohne Daueranzeige nicht zu), nur im WLAN, und bei geöffneter App alle 30 Sekunden. Ist die Box nicht erreichbar, etwa weil das Handy unterwegs ist, ändert sich nichts. Abschalten lassen sich die Benachrichtigungen im App-Menü oder in den Android-Einstellungen der App.
 
-Die App hat keine eigene Menüleiste. Das App-Menü öffnet der Button ☰ oben rechts in der Weboberfläche (nur in der App sichtbar, ab App 1.20.1 auf dem Pi; die Seite findet die App über die JavaScript-Brücke `window.PhonieboxApp`). Ist die Box nicht erreichbar, steht das Menü auf der Fehlerseite. Einträge: Status jetzt prüfen, Benachrichtigungen an/aus, Neu laden, Zertifikat neu bestätigen (nach einer Neuinstallation der Box, die ein neues Zertifikat erzeugt).
+Die App hat keine eigene Menüleiste. Das App-Menü öffnet der Button ☰ oben rechts in der Weboberfläche (nur in der App sichtbar, ab App 1.20.1 auf dem Pi, ab 1.20.2 als Dialog im Design der Weboberfläche mit dem aktuellen Status der Box; die Seite findet die App über die JavaScript-Brücke `window.PhonieboxApp`). Ist die Box nicht erreichbar, steht das Menü auf der Fehlerseite. Einträge: Status jetzt prüfen, Benachrichtigungen an/aus, Neu laden, Zertifikat neu bestätigen (nach einer Neuinstallation der Box, die ein neues Zertifikat erzeugt).
 
 ## Bauen
 

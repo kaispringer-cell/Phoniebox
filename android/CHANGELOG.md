@@ -1,3 +1,7 @@
+# 1.2.0
+
+- Das App-Menü erscheint als Dialog im Design der Weboberfläche (ab App 1.20.2 auf dem Pi): Status der Box, Benachrichtigungen an/aus, Status prüfen, Neu laden, Zertifikat neu bestätigen. Dafür kennt die Brücke `window.PhonieboxApp` zusätzlich `version()`, `notificationsEnabled()`, `setNotifications()`, `checkNow()` und `resetCertificate()`. Mit älterer Weboberfläche und auf der Fehlerseite bleibt das Android-Menü.
+
 # 1.1.0
 
 - Keine Menüleiste mehr oben: Die App zeigt nur noch die Weboberfläche. Status- und Navigationsleiste haben die Farbe der Seite (hell oder dunkel, wie in der Weboberfläche gewählt).

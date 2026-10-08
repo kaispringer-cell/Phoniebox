@@ -1,3 +1,8 @@
+# 1.20.2
+
+- „Gestalte das Menü nun entsprechend, dass es zum Rest des Phoniebox designs passt.“ – Der Button ☰ in der Android-App öffnet jetzt einen Dialog der Weboberfläche im selben Stil wie „+ Neue Karte“ statt des Android-Standardmenüs: aktuelle Probleme der Box als Hinweise (oder „Alles in Ordnung“), Schalter für Benachrichtigungen, „Status prüfen“, „Neu laden“, „Zertifikat neu bestätigen“ und die App-Version. Hell und dunkel wie die übrige Seite. Braucht Android-App 1.2.0; die App 1.1.0 zeigt weiter ihr eigenes Menü.
+- Test erweitert. Installer 2.8.18 weiterverwenden.
+
 # 1.20.1
 
 - „kannst du dem wrapper oben die menüzeile nehmen und einen steuerungsbutton in die seite einbauen“ – Die Kopfzeile der Weboberfläche hat einen Button ☰, der nur in der Android-App erscheint (ab App-Version 1.1.0) und dort das App-Menü öffnet: Status prüfen, Benachrichtigungen an/aus, Neu laden, Zertifikat neu bestätigen. Außerdem meldet die Seite der App, ob sie hell oder dunkel ist, damit die Statusleiste des Handys dieselbe Farbe bekommt. Im Browser ändert sich nichts.
