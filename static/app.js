@@ -129,6 +129,15 @@ document.querySelectorAll('.edit-card').forEach(button=>button.addEventListener(
 document.querySelectorAll('.delete-card').forEach(form=>form.addEventListener('submit',event=>{if(!confirm('Diese Kartenzuordnung löschen?'))event.preventDefault();}));
 let wasLearning=false;
 let displayedScan=null;
+// A card changes the music without anything on this page being clicked. Without this the
+// start page kept showing the previous album for up to 20 seconds (plus the server cache).
+let playedScan=null;
+function refreshAfterCard(scanKey){
+  if(playedScan===null){ playedScan=scanKey; return; }
+  if(scanKey===playedScan) return;
+  playedScan=scanKey;
+  setTimeout(player,1500); setTimeout(player,5000);
+}
 let hardwareTimer, hardwareBusy = false;
 async function hardware() {
   if (hardwareBusy) return;
@@ -139,6 +148,7 @@ async function hardware() {
       const h=await api('/api/hardware');
       $('reader-status').textContent=h.reader; $('librespot-status').textContent=h.player; $('hardware-message').textContent=h.message || 'Noch keine Meldung.';
       const scanKey = h.scan_revision+':'+h.last_uid;
+      refreshAfterCard(h.scan_revision+':'+h.message);
       if(h.last_uid && scanKey !== displayedScan){
         displayedScan=scanKey;
         loadCard(h.card);

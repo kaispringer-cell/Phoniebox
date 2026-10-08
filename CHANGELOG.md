@@ -1,3 +1,10 @@
+# 1.18.2
+
+- „Ich muss NFC-Karten häufig 2x auflegen, bis das Album abgespielt wird.“ – War die Phoniebox in Spotify gerade nicht das aktive Gerät, wurde sie zuerst per Übertragung aktiviert und dann höchstens 4 Sekunden gewartet. Dauerte das länger, brach die Karte mit „Bitte Play gleich erneut drücken“ ab. Musik-Karten senden jetzt direkt den Abspielbefehl mit Gerät und Album; Spotify aktiviert die Box dabei selbst. Nur wenn Spotify das ablehnt, wird aktiviert (bis 8 Sekunden) und automatisch erneut gestartet.
+- „Auf der Startseite steht immer nur Nick Drake.“ – Die Übertragung lud zuerst das zuletzt im Konto gehörte Album auf die Box. Danach meldete Spotify teils weiter dieses alte Album. Ohne Übertragung entfällt das; zusätzlich prüft die Box nach dem Start, ob Spotify das Album der Karte meldet, und schickt den Befehl sonst einmal erneut.
+- Die Startseite aktualisiert sich nach einer Karte nach 1,5 und 5 Sekunden statt erst nach bis zu 20 Sekunden. Der Spotify-Status wird in den 10 Sekunden nach einem Befehl nicht mehr zwischengespeichert, sodass kein veralteter Titel 15 Sekunden stehen bleibt.
+- 4 neue Tests. Installer 2.8.17 weiterverwenden. Noch nicht auf echter Hardware geprüft.
+
 # 1.18.1
 
 - Wiedergabe über einen nicht verbundenen Bluetooth-Lautsprecher meldet wieder „Bluetooth-Lautsprecher ist noch nicht verbunden“ bzw. „bewusst getrennt“. Die Prüfung lag seit 1.10.0 hinter der Weitergabe an Radio/Wecker und lief nie.

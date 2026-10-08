@@ -42,6 +42,8 @@ class Spotify:
         self.blocked_until = 0
         self.cached_at = 0
         self.cached = None
+        self.fresh_until = 0
+        self.started_uri = ''
 
     def authorize(self):
         verifier = secrets.token_urlsafe(64)
@@ -194,26 +196,19 @@ class Spotify:
             raise Problem('Spotify erlaubt die Steuerung dieses Geräts nicht.')
         device_id = matches[0]['id']
         if activate and matches[0].get('is_active') is False:
-            self.api('PUT', '/me/player', {'device_ids': [device_id], 'play': False})
-            for attempt in range(8):
-                time.sleep(0.5)
-                current = self.api('GET', '/me/player/devices').get('devices', [])
-                if any(d.get('id') == device_id and d.get('is_active') for d in current):
-                    break
-            else:
-                raise Problem('Spotify aktiviert die Phoniebox noch. Bitte Play gleich erneut drücken.')
+            self.activate(device_id)
         return device_id
 
     def command(self, action, uri=None, volume=None, persist=True):
         with self.commands:
+            if action == 'play' and uri:
+                self.play_uri(normalize_uri(uri))
+                self.fresh()
+                return
             device_id = self.device(activate=action == 'play')
             params = {'device_id': device_id}
             if action == 'play':
-                body = {}
-                if uri:
-                    uri = normalize_uri(uri)
-                    body = {'uris': [uri]} if uri.split(':')[1] in ('track', 'episode') else {'context_uri': uri}
-                self.api('PUT', '/me/player/play', body, params)
+                self.api('PUT', '/me/player/play', {}, params)
             elif action == 'pause':
                 self.api('PUT', '/me/player/pause', params=params)
             elif action in ('next', 'previous'):
@@ -240,11 +235,63 @@ class Spotify:
                     self.store.put(volume=params['volume_percent'])
             else:
                 raise Problem('Unbekannte Player-Aktion.')
-            self.cached_at = 0
+            self.fresh()
+
+    def fresh(self):
+        """Spotify reports a changed playback only after a second or two. A state read right
+        after a command would otherwise be cached for 15 seconds with the old title."""
+        self.cached_at = 0
+        self.fresh_until = time.time() + 10
+
+    def play_uri(self, uri):
+        """Start a card's album, playlist or title on the Phoniebox.
+
+        Up to 1.18.1 an inactive Phoniebox was first activated with a transfer (play=False),
+        which loads whatever the account played last (e.g. an old album from the phone) onto
+        the box, and then waited at most 4 seconds for Spotify to report it active. If that
+        took longer, the card failed with 'Bitte Play gleich erneut drücken' and had to be
+        put on a second time. The play request itself names the device and the new content,
+        so Spotify activates the box and starts the right music in one step. Only if Spotify
+        rejects that (404, box not known as playable yet), activate and try again."""
+        body = {'uris': [uri]} if uri.split(':')[1] in ('track', 'episode') else {'context_uri': uri}
+        device_id = self.device()
+        params = {'device_id': device_id}
+        try:
+            self.api('PUT', '/me/player/play', body, params)
+        except Problem as first:
+            if '404' not in str(first) and 'nicht verfügbar' not in str(first):
+                raise
+            self.activate(device_id, attempts=16)
+            self.api('PUT', '/me/player/play', body, params)
+        self.started_uri = uri
+        # Spotify sometimes acknowledges a play request but keeps the previous content on a
+        # freshly activated Connect device. Check once and repeat the request if needed.
+        for _ in range(6):
+            time.sleep(0.5)
+            if self.reports(uri, device_id):
+                return
+        self.api('PUT', '/me/player/play', body, params)
+
+    def reports(self, uri, device_id):
+        state = self.api('GET', '/me/player') or {}
+        if (state.get('device') or {}).get('id') != device_id:
+            return False
+        item = state.get('item') or {}
+        album = item.get('album') or {}
+        return uri in ((state.get('context') or {}).get('uri'), item.get('uri'), album.get('uri'))
+
+    def activate(self, device_id, attempts=8):
+        self.api('PUT', '/me/player', {'device_ids': [device_id], 'play': False})
+        for attempt in range(attempts):
+            time.sleep(0.5)
+            current = self.api('GET', '/me/player/devices').get('devices', [])
+            if any(d.get('id') == device_id and d.get('is_active') for d in current):
+                return
+        raise Problem('Spotify aktiviert die Phoniebox noch. Bitte Play gleich erneut drücken.')
 
     def state(self):
         with self.lock:
-            if time.time() - self.cached_at < 15:
+            if time.time() - self.cached_at < 15 and time.time() >= self.fresh_until:
                 return self.cached
             state = self.api('GET', '/me/player')
             self.cached, self.cached_at = state, time.time()
