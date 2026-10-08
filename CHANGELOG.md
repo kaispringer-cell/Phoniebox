@@ -1,3 +1,10 @@
+# 1.19.0
+
+- „Ein Button für neue NFC-Karten: Der Benutzer wird gebeten, eine neue NFC-Karte aufzulegen. Dann bei Spotify suchen und auswählen. NFC direkt beschreiben.“ – Unter NFC-Karten gibt es den Button **Neue NFC-Karte**. Er öffnet einen Dialog: Karte auflegen (Anlernmodus, nichts spielt), bei Spotify suchen (Typ wählbar), Ergebnis auswählen, Namen prüfen, speichern. Eine schon belegte Karte wird vorher als solche angezeigt. Neue Route `POST /api/cards/music`.
+- Nach dem Speichern kann der Spotify-Link zusätzlich direkt auf die Karte geschrieben werden, wenn der Browser Web NFC kann (Chrome auf Android, Karte ans Handy halten). Der USB-Reader der Phoniebox liest nur Karten-IDs und kann nicht schreiben; für die Wiedergabe auf der Box ist das Schreiben nicht nötig.
+- „Karte ohne Wiedergabe erfassen“ bleibt für Steuer- und Radiokarten und das Bearbeiten vorhandener Karten.
+- 5 neue Tests. Installer 2.8.17 weiterverwenden. Noch nicht auf echter Hardware geprüft.
+
 # 1.18.3
 
 - „Der Player zeigt immer noch das selbe Album an, egal welche Karte aufgelegt wird.“ – Die Startseite las Titel, Interpret und Cover nur aus Spotifys Web-API (`/me/player`). Die meldete für die Phoniebox weiter ein altes Album, obwohl das Album der Karte hörbar lief. librespot meldet jetzt selbst bei jedem Titelwechsel, Play und Pause, was es spielt (`--onevent` mit dem neuen `librespot_event.py`, Datei `librespot-state.json` im Datenordner). Die Startseite zeigt bevorzugt diese Angaben und greift nur auf die Web-API zurück, wenn librespot nichts meldet.
