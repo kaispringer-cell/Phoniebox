@@ -40,3 +40,18 @@ dialog#new-card::backdrop,dialog#app-dialog::backdrop{background:#0b1716b3}
 @media(prefers-reduced-motion:reduce){.sound-mark.waiting i{animation:none}}
 #app-menu{font-size:18px;min-height:40px;min-width:44px;padding:6px 12px;line-height:1}
 #app-status .notice{margin:10px 0}#app-status .notice strong{display:block}.app-switch{display:flex;align-items:center;padding:14px 0;margin:8px 0 0;border-top:1px solid var(--line);font-size:15px}#app-dialog .actions{margin:16px 0 8px}
+
+/* Spotify tab */
+#spotify-connection{margin-top:24px}
+.sp-now{display:grid;grid-template-columns:88px minmax(0,1fr) auto;gap:6px 20px;align-items:center;margin:8px 0 24px;padding:20px;background:#f2f6f2;border-radius:16px}
+.sp-art{width:88px;height:88px;display:grid;place-items:center;background:#e0eee5;border-radius:14px;overflow:hidden}.sp-art img{width:100%;height:100%;object-fit:cover}
+.sp-art .sound-mark{gap:4px}.sp-art .sound-mark i{width:6px;background:var(--accent)}.sp-art .sound-mark i:nth-child(1){height:16px}.sp-art .sound-mark i:nth-child(2){height:28px}.sp-art .sound-mark i:nth-child(3){height:44px}.sp-art .sound-mark i:nth-child(4){height:24px}.sp-art .sound-mark i:nth-child(5){height:36px}
+.sp-info{min-width:0}.sp-info h3{overflow-wrap:anywhere}.sp-info p{margin:4px 0}.sp-info .hint:empty{display:none}
+.sp-now .controls{gap:8px}.sp-now .controls button{min-width:48px;padding:10px 14px}
+.sp-now .volume{grid-column:1/-1;margin:10px 0 0}
+#sp-results,#sp-tracks{max-height:none}#sp-album-back{margin:8px 0}#sp-album-head .card{border-bottom:2px solid var(--accent)}
+[data-theme=dark] .sp-now{background:#14231f}[data-theme=dark] .sp-art{background:#29483b}
+@media(prefers-color-scheme:dark){:root:not([data-theme]) .sp-now{background:#14231f}:root:not([data-theme]) .sp-art{background:#29483b}}
+@media(max-width:720px){.sp-now{grid-template-columns:72px minmax(0,1fr);padding:16px}.sp-art{width:72px;height:72px}.sp-now .controls{grid-column:1/-1}}
+.card>.thumb+div{flex:1}@media(min-width:721px){#sp-results .actions,#sp-album .actions{flex:none;justify-content:flex-end}}
+@media(max-width:720px){#sp-results .card,#sp-album .card{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px 14px;align-items:center}#sp-results .card .actions,#sp-album .card .actions{grid-column:1/-1}}

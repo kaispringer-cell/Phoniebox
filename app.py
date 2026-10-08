@@ -83,7 +83,7 @@ def create_app(directory=None, start_hardware=False):
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['Content-Security-Policy'] = (
-            "default-src 'self'; img-src 'self' https://i.scdn.co https://mosaic.scdn.co; style-src 'self'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+            "default-src 'self'; img-src 'self' https://*.scdn.co https://*.spotifycdn.com; style-src 'self'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
         )
         return response
 
@@ -384,6 +384,10 @@ def create_app(directory=None, start_hardware=False):
         if not 1 <= len(query) <= 100:
             return jsonify(results=[])
         return jsonify(results=sp.search(query, kind=kind))
+
+    @app.get('/api/spotify/album')
+    def spotify_album():
+        return jsonify(sp.album(request.args.get('uri', '')))
 
     @app.post('/cards')
     def cards():
