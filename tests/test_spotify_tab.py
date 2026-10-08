@@ -80,3 +80,10 @@ def test_spotify_tab_buttons_play_and_link_card():
     assert re.search(r"label:'Abspielen', onClick:spotifyPlay", js)
     assert re.search(r"label:'Mit NFC verbinden', quiet:true, onClick:openNewCard", js)
     assert 'if (newCard.preset) { newCardPick(newCard.preset); return; }' in js
+
+
+def test_player_kicker_shows_artist_while_playing(app):
+    html = app.test_client().get('/', base_url=BASE).text
+    assert '<p class="eyebrow" id="player-kicker">WILLKOMMEN</p>' in html
+    js = Path(__file__).resolve().parent.parent.joinpath('static', 'app.js').read_text()
+    assert "$('player-kicker').textContent = band || 'WILLKOMMEN'" in js
