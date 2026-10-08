@@ -12,10 +12,6 @@ import android.content.IntentFilter;
 import android.content.pm.ServiceInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Icon;
-import android.media.MediaMetadata;
-import android.media.session.MediaSession;
-import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -23,6 +19,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.widget.RemoteViews;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -61,7 +58,6 @@ public class PlayerService extends Service {
     private final Handler main = new Handler(Looper.getMainLooper());
     private HandlerThread thread;
     private Handler worker;
-    private MediaSession session;
     private NotificationManager manager;
 
     /** Schreibt nur der Worker-Thread; build() liest sie auch im UI-Thread. */
@@ -175,35 +171,6 @@ public class PlayerService extends Service {
         thread.start();
         worker = new Handler(thread.getLooper());
 
-        session = new MediaSession(this, "Phoniebox");
-        session.setSessionActivity(openApp());
-        session.setCallback(new MediaSession.Callback() {
-            @Override
-            public void onPlay() {
-                send("play");
-            }
-
-            @Override
-            public void onPause() {
-                send("pause");
-            }
-
-            @Override
-            public void onSkipToNext() {
-                send("next");
-            }
-
-            @Override
-            public void onSkipToPrevious() {
-                send("previous");
-            }
-
-            @Override
-            public void onStop() {
-                send("pause");
-            }
-        });
-        session.setActive(true);
 
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
@@ -242,7 +209,6 @@ public class PlayerService extends Service {
         unregisterReceiver(screen);
         worker.removeCallbacksAndMessages(null);
         thread.quitSafely();
-        session.release();
         super.onDestroy();
     }
 
@@ -275,7 +241,7 @@ public class PlayerService extends Service {
         });
     }
 
-    /** Fragt die Box und aktualisiert Benachrichtigung und Mediensitzung. */
+    /** Fragt die Box und aktualisiert die Benachrichtigung. */
     private void refresh() {
         JSONObject state;
         try {
@@ -348,12 +314,18 @@ public class PlayerService extends Service {
             BitmapFactory.decodeByteArray(bytes, 0, bytes.length, bounds);
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inSampleSize = 1;
-            while (Math.max(bounds.outWidth, bounds.outHeight) / (options.inSampleSize * 2) >= 512) {
+            while (Math.max(bounds.outWidth, bounds.outHeight) / (options.inSampleSize * 2) >= 192) {
                 options.inSampleSize *= 2;
             }
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
             if (bitmap == null) {
                 throw new IOException("Kein Bild");
+            }
+            // Klein halten: Das Bild reist zweimal (ein- und ausgeklappt) zur Systemoberfläche.
+            int size = Math.max(bitmap.getWidth(), bitmap.getHeight());
+            if (size > 192) {
+                bitmap = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() * 192 / size,
+                        bitmap.getHeight() * 192 / size, true);
             }
             return bitmap;
         } finally {
@@ -361,37 +333,29 @@ public class PlayerService extends Service {
         }
     }
 
-    /** Überträgt den Stand in Mediensitzung und Benachrichtigung. */
-    private void publish(JSONObject state) {
-        MediaMetadata.Builder metadata = new MediaMetadata.Builder()
-                .putString(MediaMetadata.METADATA_KEY_TITLE, title)
-                .putString(MediaMetadata.METADATA_KEY_ARTIST, text);
-        if (cover != null) {
-            metadata.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, cover);
-        }
-        long duration = state == null ? 0 : state.optLong("duration");
-        if (duration > 0) {
-            metadata.putLong(MediaMetadata.METADATA_KEY_DURATION, duration);
-        }
-        session.setMetadata(metadata.build());
+    /** Fortschritt in Promille, für den Balken im ausgeklappten Player. */
+    private volatile int progress;
 
-        long position = state == null ? PlaybackState.PLAYBACK_POSITION_UNKNOWN : state.optLong("progress");
-        session.setPlaybackState(new PlaybackState.Builder()
-                .setActions(PlaybackState.ACTION_PLAY | PlaybackState.ACTION_PAUSE
-                        | PlaybackState.ACTION_PLAY_PAUSE | PlaybackState.ACTION_SKIP_TO_NEXT
-                        | PlaybackState.ACTION_SKIP_TO_PREVIOUS)
-                .setState(playing ? PlaybackState.STATE_PLAYING : PlaybackState.STATE_PAUSED,
-                        position, playing && duration > 0 ? 1f : 0f)
-                .build());
+    /** Überträgt den Stand in die Benachrichtigung. */
+    private void publish(JSONObject state) {
+        long duration = state == null ? 0 : state.optLong("duration");
+        progress = duration > 0 ? (int) Math.min(1000, state.optLong("progress") * 1000 / duration) : 0;
         manager.notify(ID, build());
     }
 
+    /**
+     * Eine gewöhnliche Benachrichtigung mit eigenem Layout statt Android-Mediensteuerung:
+     * Samsung (One UI) zeigt die Mediensitzung einer App, die selbst nichts abspielt, nirgends an,
+     * und die Mediensitzung würde außerdem Kopfhörertasten statt Spotify auf dem Handy bekommen.
+     */
     private Notification build() {
-        Notification.Builder builder = new Notification.Builder(this, CHANNEL)
+        return new Notification.Builder(this, CHANNEL)
                 .setSmallIcon(R.drawable.ic_bars)
                 .setContentTitle(title)
                 .setContentText(text)
-                .setLargeIcon(cover)
+                .setCustomContentView(controls(R.layout.player_small))
+                .setCustomBigContentView(controls(R.layout.player_big))
+                .setStyle(new Notification.DecoratedCustomViewStyle())
                 .setContentIntent(openApp())
                 .setDeleteIntent(command(STOP, 9))
                 .setOngoing(playing)
@@ -399,20 +363,28 @@ public class PlayerService extends Service {
                 .setOnlyAlertOnce(true)
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .setCategory(Notification.CATEGORY_TRANSPORT)
-                .addAction(action(android.R.drawable.ic_media_previous, "Zurück", "previous", 1))
-                .addAction(playing
-                        ? action(android.R.drawable.ic_media_pause, "Pause", "pause", 2)
-                        : action(android.R.drawable.ic_media_play, "Start", "play", 3))
-                .addAction(action(android.R.drawable.ic_media_next, "Weiter", "next", 4))
-                .setStyle(new Notification.MediaStyle()
-                        .setMediaSession(session.getSessionToken())
-                        .setShowActionsInCompactView(0, 1, 2));
-        return builder.build();
+                .build();
     }
 
-    private Notification.Action action(int icon, String label, String name, int request) {
-        return new Notification.Action.Builder(Icon.createWithResource(this, icon), label,
-                command(name, request)).build();
+    private RemoteViews controls(int layout) {
+        RemoteViews views = new RemoteViews(getPackageName(), layout);
+        views.setTextViewText(R.id.title, title);
+        views.setTextViewText(R.id.artist, text);
+        Bitmap image = cover;
+        if (image != null) {
+            views.setImageViewBitmap(R.id.cover, image);
+        } else {
+            views.setImageViewResource(R.id.cover, R.drawable.ic_cover);
+        }
+        views.setImageViewResource(R.id.play, playing ? R.drawable.ic_pause : R.drawable.ic_play);
+        views.setContentDescription(R.id.play, playing ? "Pause" : "Start");
+        views.setOnClickPendingIntent(R.id.prev, command("previous", 1));
+        views.setOnClickPendingIntent(R.id.play, playing ? command("pause", 2) : command("play", 3));
+        views.setOnClickPendingIntent(R.id.next, command("next", 4));
+        if (layout == R.layout.player_big) {
+            views.setProgressBar(R.id.progress, 1000, progress, false);
+        }
+        return views;
     }
 
     private PendingIntent command(String name, int request) {

@@ -1,3 +1,8 @@
+# 1.3.4
+
+- „Der Player ist nicht bei den anderen Medien-Kacheln. … Auch in der Now-Bar ist von der Phoniebox nichts zu sehen.“ – Laut Diagnose lief der Player, aber Samsung (One UI, Android 16) zeigt die Mediensitzung einer App, die selbst keinen Ton abspielt, nirgends an. Der Player ist jetzt eine gewöhnliche Benachrichtigung mit eigenem Layout: Phoniebox-Symbol in der Statusleiste, in der Liste Albumcover, Titel, Interpret und Zurück, Start/Pause, Weiter; ausgeklappt mit großem Cover und Fortschrittsbalken. Antippen öffnet die App.
+- Ohne Mediensitzung landen Kopfhörer- und Bluetooth-Tasten wieder bei Spotify auf dem Handy statt bei der Phoniebox-App.
+
 # 1.3.3
 
 - „In Version 1.3.2 gibt es keine Playerdiagnose. Es klappt immer noch nicht.“ – Das Menü ☰ öffnet die Weboberfläche, und die zeigt die Diagnose erst ab App 1.23.1 auf dem Pi. Die App meldet sich jetzt selbst: Ist der Player 4 Sekunden nach dem Öffnen nicht zu sehen, erscheint einmal pro Start der Dialog „Player startet nicht“ mit dem Befund (Android-Version, Gerät, Berechtigung, Kanal, Dienst, ob Android die Benachrichtigung führt, letztes Ereignis).

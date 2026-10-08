@@ -14,7 +14,7 @@ Neuere Versionen lassen sich einfach über die alte installieren.
 
 ## Player in der Benachrichtigungsleiste
 
-Ab App 1.3.0 (und App 1.22.0 auf dem Pi) zeigt die App einen Player in der Benachrichtigungsleiste, ab Android 13 auch in den Mediensteuerungen der Schnelleinstellungen und auf dem Sperrbildschirm: Albumcover, Titel, Interpret, Fortschritt und Zurück, Start/Pause, Weiter. Antippen öffnet die App. Er startet beim Öffnen der App und bleibt, solange die Box erreichbar ist (bei laufender Musik Abfrage alle 5 Sekunden, sonst alle 15, bei ausgeschaltetem Bildschirm keine). Ist die Box länger als 2 Minuten nicht erreichbar oder wird er weggewischt, verschwindet er bis zum nächsten Öffnen der App. Abschalten im App-Menü.
+Ab App 1.3.0 (und App 1.22.0 auf dem Pi) zeigt die App einen Player als Benachrichtigung (ab 1.3.4 mit eigenem Layout statt Android-Mediensteuerung, die Samsung für eine App ohne eigenen Ton nicht anzeigt): Albumcover, Titel, Interpret, Fortschritt und Zurück, Start/Pause, Weiter. Antippen öffnet die App. Er startet beim Öffnen der App und bleibt, solange die Box erreichbar ist (bei laufender Musik Abfrage alle 5 Sekunden, sonst alle 15, bei ausgeschaltetem Bildschirm keine). Ist die Box länger als 2 Minuten nicht erreichbar oder wird er weggewischt, verschwindet er bis zum nächsten Öffnen der App. Abschalten im App-Menü.
 
 ## Benachrichtigungen
 
@@ -45,4 +45,4 @@ gradle -p android assembleDebug
 
 Die Version steht in `android/VERSION`; für ein neues Release erhöhen und einen Abschnitt in `android/CHANGELOG.md` ergänzen. Die APK ist mit dem Debug-Schlüssel `android/debug.keystore` signiert, der absichtlich im Repository liegt: So lässt sich jede neue APK über die vorige installieren. Der Schlüssel schützt nichts; wer ihn hat, kann eine APK bauen, die sich als Update dieser App installieren lässt. Installiert wird sie trotzdem nur, wenn jemand sie auf dem Handy selbst öffnet.
 
-Die App ist reines Java ohne Bibliotheken: `MainActivity` (WebView, Zertifikatsabfrage, Menü), `Box` (Adresse, Zertifikat-Pinning, Abfrage), `Notifier` (Benachrichtigungen), `StatusJob` (Hintergrundprüfung per JobScheduler), `PlayerService` (Player in der Benachrichtigungsleiste: Vordergrunddienst mit `MediaSession`, fragt `GET /api/player` ab und sendet `POST /api/player/<aktion>` mit dem Token aus `GET /api/csrf`).
+Die App ist reines Java ohne Bibliotheken: `MainActivity` (WebView, Zertifikatsabfrage, Menü), `Box` (Adresse, Zertifikat-Pinning, Abfrage), `Notifier` (Benachrichtigungen), `StatusJob` (Hintergrundprüfung per JobScheduler), `PlayerService` (Player in der Benachrichtigungsleiste: Vordergrunddienst mit eigener Benachrichtigung `player_small`/`player_big`, fragt `GET /api/player` ab und sendet `POST /api/player/<aktion>` mit dem Token aus `GET /api/csrf`).

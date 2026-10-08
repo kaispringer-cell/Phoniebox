@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Platzhalter, solange kein Albumcover da ist: die Klangbalken der Weboberfläche. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape android:shape="rectangle"><solid android:color="#142C2C" /><corners android:radius="8dp" /></shape></item>
+    <item android:drawable="@drawable/ic_cover_bars" android:left="12dp" android:top="12dp" android:right="12dp" android:bottom="12dp" />
+</layer-list>
