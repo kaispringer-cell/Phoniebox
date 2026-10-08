@@ -1,32 +1,52 @@
-# Ein Tag vX.Y.Z erzeugt ein GitHub-Release mit dem App-Paket phoniebox-X.Y.Z.tar.gz.
-# Der Desktop-Installer lädt daraus unter Updates die neueste Version.
+# Legt für jede neue Version in VERSION ein GitHub-Release mit dem App-Paket phoniebox-X.Y.Z.tar.gz an.
+# Läuft bei jedem Push auf main (und von Hand); gibt es das Release vX.Y.Z schon, passiert nichts.
+# Ein von Hand gepushter Tag vX.Y.Z funktioniert ebenso. Der Desktop-Installer lädt das neueste Release.
 name: Release
 
 on:
   push:
+    branches: [main]
     tags: ['v*.*.*']
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+      - name: Version bestimmen
+        id: version
+        run: |
+          tag="v$(tr -d '[:space:]' < VERSION)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "Release $tag gibt es schon, nichts zu tun."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/setup-python@v5
+        if: steps.version.outputs.exists != 'true'
         with:
           python-version: '3.13'
       - name: Tests
+        if: steps.version.outputs.exists != 'true'
         run: |
           pip install -r requirements.txt
           python -m pytest -q
       - name: Paket bauen
-        run: scripts/build-package.sh "$GITHUB_REF_NAME"
+        if: steps.version.outputs.exists != 'true'
+        run: scripts/build-package.sh "${{ steps.version.outputs.tag }}"
       - name: Release veröffentlichen
-        env:
-          GH_TOKEN: ${{ github.token }}
+        if: steps.version.outputs.exists != 'true'
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          gh release create "$GITHUB_REF_NAME" dist/phoniebox-*.tar.gz dist/phoniebox-*.tar.gz.sha256 \
-            --title "Phoniebox $version" --notes-file dist/notes.md --verify-tag
+          tag="${{ steps.version.outputs.tag }}"
+          gh release create "$tag" dist/phoniebox-*.tar.gz dist/phoniebox-*.tar.gz.sha256 \
+            --target "$GITHUB_SHA" --title "Phoniebox ${tag#v}" --notes-file dist/notes.md
