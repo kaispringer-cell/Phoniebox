@@ -162,13 +162,7 @@ Wer Dateien hinzufügt oder ändert, die per Update ausgeliefert werden, muss `V
 
 ### Release veröffentlichen
 
-Nach dem Merge auf `main` einen Tag mit der Version aus `VERSION` setzen und pushen:
-
-```bash
-git tag v1.18.2 && git push origin v1.18.2
-```
-
-Die Action `.github/workflows/release.yml` lässt die Tests laufen, baut mit `scripts/build-package.sh` das Paket `phoniebox-1.18.2.tar.gz` (alle Dateien unter `phoniebox/`, wie der Updater es verlangt) samt `.sha256` und legt ein Release mit dem passenden CHANGELOG-Abschnitt an. Passen Tag, `VERSION` und `release.json` nicht zusammen oder fehlt der CHANGELOG-Abschnitt, bricht sie ab. Die automatischen Quellarchive von GitHub sind keine gültigen App-Pakete, weil ihr Ordner anders heißt.
+Releases entstehen automatisch. Steht in `VERSION` auf `main` eine Version, für die es noch kein Release gibt, lässt die Action `.github/workflows/release.yml` die Tests laufen, baut mit `scripts/build-package.sh` das Paket `phoniebox-X.Y.Z.tar.gz` (alle Dateien unter `phoniebox/`, wie der Updater es verlangt) samt `.sha256` und legt das Release `vX.Y.Z` mit dem passenden CHANGELOG-Abschnitt an. Für eine neue Version genügt es also, `VERSION`, `release.json` und `CHANGELOG.md` zu erhöhen und auf `main` zu mergen. Passen `VERSION` und `release.json` nicht zusammen oder fehlt der CHANGELOG-Abschnitt, bricht die Action ab. Ein von Hand gepushter Tag `vX.Y.Z` funktioniert ebenso. Die automatischen Quellarchive von GitHub sind keine gültigen App-Pakete, weil ihr Ordner anders heißt.
 
 ## Bekannte Einschränkungen
 
