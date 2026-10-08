@@ -1,3 +1,9 @@
+# 1.22.0
+
+- Für den Player der Android-App 1.3.0 in der Benachrichtigungsleiste: Neuer Endpunkt `GET /api/csrf`, über den die App das Token ihrer Sitzung holt, um Start, Pause, Zurück und Weiter ohne geöffnete Seite zu senden. Andere Webseiten können die Antwort nicht lesen.
+- Im App-Dialog (☰) gibt es den Schalter „Player in der Benachrichtigungsleiste“, sobald die App ihn kennt (ab 1.3.0).
+- 2 neue Tests. Installer 2.8.18 weiterverwenden.
+
 # 1.21.0
 
 - „Bauen wir einen weiteren Tab ein: Spotify. Dort soll man Spotify steuern können. Album oder Song aussuchen. Und bei gefallen: mit NFC verbinden. Dann öffnet sich der bekannte Dialog.“ – Der Tab **Spotify** zeigt oben, was gerade läuft, mit Zurück, Start, Pause, Weiter und Lautstärke. Darunter die Spotify-Suche (Album, Titel, Playlist oder Alles). Jedes Ergebnis hat **Abspielen** und **Mit NFC verbinden**, Alben zusätzlich **Titel**: Das zeigt die Titelliste des Albums (bei langen Hörspielen bis 200 Titel), jeder Titel lässt sich einzeln abspielen oder auf eine Karte legen.

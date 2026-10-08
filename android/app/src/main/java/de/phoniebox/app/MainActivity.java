@@ -65,9 +65,12 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         Notifier.createChannel(this);
+        PlayerService.createChannel(this);
+        if (Box.notificationsEnabled(this) || Box.playerEnabled(this)) {
+            askForNotificationPermission();
+        }
         if (Box.notificationsEnabled(this)) {
             StatusJob.schedule(this);
-            askForNotificationPermission();
         }
 
         FrameLayout root = new FrameLayout(this);
@@ -110,6 +113,7 @@ public class MainActivity extends Activity {
         super.onResume();
         web.onResume();
         handler.post(poll);
+        PlayerService.start(this);
     }
 
     @Override
@@ -138,9 +142,11 @@ public class MainActivity extends Activity {
     /** Das App-Menü. Geöffnet über den Button ☰ oben in der Weboberfläche oder auf der Fehlerseite. */
     private void showMenu() {
         boolean enabled = Box.notificationsEnabled(this);
+        boolean player = Box.playerEnabled(this);
         String[] items = {
                 "Status jetzt prüfen",
                 enabled ? "Benachrichtigungen ausschalten" : "Benachrichtigungen einschalten",
+                player ? "Player in der Leiste ausblenden" : "Player in der Leiste zeigen",
                 "Neu laden",
                 "Zertifikat neu bestätigen",
         };
@@ -155,6 +161,9 @@ public class MainActivity extends Activity {
                             setNotifications(!enabled);
                             break;
                         case 2:
+                            setPlayer(!player);
+                            break;
+                        case 3:
                             reload();
                             break;
                         default:
@@ -192,6 +201,18 @@ public class MainActivity extends Activity {
                 Toast.LENGTH_SHORT).show();
     }
 
+    private void setPlayer(boolean enable) {
+        Box.prefs(this).edit().putBoolean(Box.PLAYER, enable).apply();
+        if (enable) {
+            askForNotificationPermission();
+            PlayerService.start(this);
+        } else {
+            PlayerService.stop(this);
+        }
+        Toast.makeText(this, enable ? "Player in der Benachrichtigungsleiste an" : "Player ausgeblendet",
+                Toast.LENGTH_SHORT).show();
+    }
+
     /** Status- und Navigationsleiste in der Farbe der Seite. */
     private void applyBarColors(boolean dark) {
         int color = Color.parseColor(dark ? "#101C1B" : "#F4F6F4");
@@ -223,6 +244,20 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 if (fromBox() && enable != Box.notificationsEnabled(MainActivity.this)) {
                     MainActivity.this.setNotifications(enable);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public boolean playerEnabled() {
+            return Box.playerEnabled(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void setPlayer(boolean enable) {
+            runOnUiThread(() -> {
+                if (fromBox() && enable != Box.playerEnabled(MainActivity.this)) {
+                    MainActivity.this.setPlayer(enable);
                 }
             });
         }
@@ -368,6 +403,7 @@ public class MainActivity extends Activity {
                     Box.setPin(this, fingerprint);
                     ssl.proceed();
                     check(false);
+                    PlayerService.start(this);
                 })
                 .setNegativeButton("Abbrechen", (d, w) -> {
                     ssl.cancel();

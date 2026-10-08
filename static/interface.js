@@ -54,8 +54,16 @@
           status.replaceChildren(note('notice error', 'Status nicht abrufbar', error.message));
         }
       };
+      // Ab Android-App 1.3.0: Player in der Benachrichtigungsleiste.
+      const player = document.getElementById('app-player');
+      const hasPlayer = player && typeof app.playerEnabled === 'function';
+      if (hasPlayer) {
+        document.getElementById('app-player-row').hidden = false;
+        player.addEventListener('change', () => app.setPlayer(player.checked));
+      }
       appButton.addEventListener('click', () => {
         notify.checked = app.notificationsEnabled();
+        if (hasPlayer) player.checked = app.playerEnabled();
         document.getElementById('app-version').textContent = 'Phoniebox-App ' + app.version();
         appDialog.showModal();
         loadStatus();

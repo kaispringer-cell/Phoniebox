@@ -110,3 +110,21 @@ def test_app_menu_button_is_hidden_outside_the_app():
         assert html.count('<dialog id="app-dialog"') == 1 and 'id="app-notify"' in html
     script = (Path(__file__).parent.parent / 'static' / 'interface.js').read_text()
     assert 'window.PhonieboxApp' in script and 'app.openMenu()' in script
+
+
+def test_csrf_token_for_the_android_player():
+    with TemporaryDirectory() as d:
+        client = create_app(Path(d)).test_client()
+        token = client.get('/api/csrf', base_url='https://phoniebox.local').json['csrf']
+        assert token
+        assert client.post('/api/learn/cancel', base_url='https://phoniebox.local').status_code == 403
+        r = client.post('/api/learn/cancel', base_url='https://phoniebox.local', headers={'X-CSRF-Token': token})
+        assert r.status_code == 200
+
+
+def test_player_switch_only_for_apps_that_have_it():
+    with TemporaryDirectory() as d:
+        html = create_app(Path(d)).test_client().get('/', base_url='https://phoniebox.local').text
+        assert '<div id="app-player-row" hidden>' in html and 'id="app-player"' in html
+    script = (Path(__file__).parent.parent / 'static' / 'interface.js').read_text()
+    assert "typeof app.playerEnabled === 'function'" in script and 'app.setPlayer(player.checked)' in script
