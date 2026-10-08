@@ -1,3 +1,10 @@
+# 1.19.0
+
+- „Ein Button für neue NFC-Karten: Der Benutzer wird gebeten, eine neue NFC-Karte aufzulegen. Dann bei Spotify suchen und auswählen.“ – Unter NFC-Karten öffnet **+ Neue Karte** einen Dialog in drei Schritten: Karte auflegen (stiller Anlernmodus, Musik startet nicht), Spotify durchsuchen (Alles, Album, Playlist oder Titel) und ein Ergebnis wählen, Name prüfen und speichern. Ist die Karte schon belegt, nennt der Dialog die bisherige Musik. Wird in 60 Sekunden keine Karte erkannt, zeigt er den Reader-Status und „Erneut warten“.
+- „NFC direkt beschreiben“ geht mit dem verbauten Reader nicht: Der M301 meldet sich als Tastatur und liefert nur die Kartennummer, er kann nichts auf Karten schreiben. Die Box speichert wie bisher Kartennummer und Musik zusammen; der Dialog weist darauf hin.
+- Die Spotify-Suche im Kartenformular und im Dialog nutzen denselben Code.
+- 2 neue Tests. Installer 2.8.18 weiterverwenden. Noch nicht auf echter Hardware geprüft.
+
 # 1.18.3
 
 - „Der Player zeigt immer noch das selbe Album an, egal welche Karte aufgelegt wird.“ – Die Startseite las Titel, Interpret und Cover nur aus Spotifys Web-API (`/me/player`). Die meldete für die Phoniebox weiter ein altes Album, obwohl das Album der Karte hörbar lief. librespot meldet jetzt selbst bei jedem Titelwechsel, Play und Pause, was es spielt (`--onevent` mit dem neuen `librespot_event.py`, Datei `librespot-state.json` im Datenordner). Die Startseite zeigt bevorzugt diese Angaben und greift nur auf die Web-API zurück, wenn librespot nichts meldet.

@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": "1.18.3",
+  "version": "1.19.0",
   "database_schema": 1,
   "packages": [
     "python3-flask",
