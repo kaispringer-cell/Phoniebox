@@ -38,3 +38,4 @@ dialog#new-card::backdrop{background:#0b1716b3}
 #nc-results{max-height:50vh;overflow:auto}#nc-save .card{justify-content:flex-start;padding:12px 0}
 @media(max-width:720px){dialog#new-card{padding:20px}#new-card .section-title{flex-direction:row}#nc-save .card{flex-direction:row;align-items:center}}
 @media(prefers-reduced-motion:reduce){.sound-mark.waiting i{animation:none}}
+#app-menu{font-size:18px;min-height:40px;min-width:44px;padding:6px 12px;line-height:1}

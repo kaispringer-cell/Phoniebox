@@ -100,3 +100,12 @@ def test_notifications_api(monkeypatch):
         assert r.status_code == 200
         assert r.json['version'] == (Path(__file__).parent.parent / 'VERSION').read_text().strip()
         assert r.json['notifications'] == []
+
+
+def test_app_menu_button_is_hidden_outside_the_app():
+    with TemporaryDirectory() as d:
+        html = create_app(Path(d)).test_client().get('/', base_url='https://phoniebox.local').text
+        assert html.count('id="app-menu"') == 1
+        assert '<button id="app-menu" class="quiet" type="button" hidden' in html
+    script = (Path(__file__).parent.parent / 'static' / 'interface.js').read_text()
+    assert 'window.PhonieboxApp' in script and 'app.openMenu()' in script

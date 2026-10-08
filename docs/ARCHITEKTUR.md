@@ -41,7 +41,7 @@ Die Wiedergabe arbeitet zweigleisig:
 | `deploy/` | `phoniebox.service`, `phoniebox-reboot.path`/`.service` (Neustart-Helfer), `bluealsa-override.conf` (`--keep-alive=5`), `nginx.conf`, udev-Regel `99-phoniebox-nfc.rules` |
 | `templates/`, `static/` | Eine Seite (`index.html` auf `base.html`), `app.js` (Polling und Formulare), `style.css` |
 | `release.json`, `VERSION` | Manifest und Version des Update-Pakets |
-| `tests/` | pytest-Tests (70) |
+| `tests/` | pytest-Tests (71) |
 | `android/` | Android-App (WebView auf `https://phoniebox.local` plus Benachrichtigungen), nicht Teil des App-Pakets. Siehe `android/README.md` |
 
 ## Threads und Laufzeitverhalten

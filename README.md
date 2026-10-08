@@ -2,7 +2,7 @@
 
 Musikbox für den Raspberry Pi: NFC-Karten starten Spotify-Inhalte, eine Weboberfläche verwaltet Karten, Radio, Wecker und Einstellungen. Die Ausgabe läuft über den analogen 3,5-mm-Klinkenanschluss.
 
-- Version: siehe `VERSION` (aktuell 1.20.0)
+- Version: siehe `VERSION` (aktuell 1.20.1)
 - Änderungen: [CHANGELOG.md](CHANGELOG.md)
 - Technischer Aufbau, Datenmodell, Update-Paket: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md)
 
@@ -148,7 +148,7 @@ sudo bash diagnose.sh                     # nur lesend, gibt keine Zugangsdaten 
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
-python3 -m pytest -q tests          # 70 Tests
+python3 -m pytest -q tests          # 71 Tests
 ```
 
 Ohne Pi lässt sich die Weboberfläche lokal starten:
