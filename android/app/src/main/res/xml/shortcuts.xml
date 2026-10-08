@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Langes Drücken auf das App-Symbol: Befund, warum der Player (nicht) zu sehen ist. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="diagnose"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_diagnose">
+        <intent
+            android:action="de.phoniebox.app.DIAGNOSE"
+            android:targetPackage="de.phoniebox.app"
+            android:targetClass="de.phoniebox.app.MainActivity" />
+    </shortcut>
+</shortcuts>

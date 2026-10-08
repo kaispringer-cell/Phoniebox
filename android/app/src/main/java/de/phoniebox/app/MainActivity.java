@@ -46,6 +46,8 @@ import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
     /** Solange die App offen ist, so oft nachsehen. */
     private static final long FOREGROUND_INTERVAL = 30_000L;
+    /** Verknüpfung „Player-Diagnose“ (langes Drücken auf das App-Symbol). */
+    static final String DIAGNOSE = "de.phoniebox.app.DIAGNOSE";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService background = Executors.newSingleThreadExecutor();
@@ -57,6 +59,7 @@ public class MainActivity extends Activity {
     /** Die Android-Abfrage und der Hinweis auf die Einstellungen kommen höchstens einmal pro Start. */
     private boolean permissionRequested;
     private boolean settingsOffered;
+    private boolean playerReported;
 
     private final Runnable poll = new Runnable() {
         @Override
@@ -105,6 +108,18 @@ public class MainActivity extends Activity {
         if (web.getUrl() == null) {
             web.loadUrl(Box.URL);
         }
+        if (DIAGNOSE.equals(getIntent().getAction())) {
+            showPlayerDiagnosis();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (DIAGNOSE.equals(intent.getAction())) {
+            showPlayerDiagnosis();
+        }
     }
 
     @Override
@@ -120,6 +135,7 @@ public class MainActivity extends Activity {
         handler.post(poll);
         // Erst nach dem Fortsetzen: Dann zählt die App für Android sicher als im Vordergrund.
         handler.post(() -> PlayerService.start(this));
+        handler.postDelayed(this::reportPlayerProblem, 4000);
     }
 
     @Override
@@ -402,6 +418,25 @@ public class MainActivity extends Activity {
                         + "In den Einstellungen „Benachrichtigungen“ für Phoniebox erlauben.")
                 .setPositiveButton("Einstellungen öffnen", (d, w) -> openNotificationSettings())
                 .setNegativeButton("Später", null)
+                .show();
+    }
+
+    /**
+     * Läuft der Player kurz nach dem Start nicht, zeigt die App einmal pro Start den Befund,
+     * statt still zu bleiben. Ohne Zertifikat oder mit ausgeschaltetem Player kein Hinweis.
+     */
+    private void reportPlayerProblem() {
+        if (playerReported || isFinishing() || (PlayerService.running && PlayerService.visible(this))
+                || !Box.playerEnabled(this) || Box.pin(this) == null) {
+            return;
+        }
+        playerReported = true;
+        new AlertDialog.Builder(this)
+                .setTitle("Player startet nicht")
+                .setMessage(PlayerService.diagnosis(this)
+                        + "\n\nBitte diesen Text (oder einen Screenshot) weitergeben.")
+                .setPositiveButton("OK", null)
+                .setNeutralButton("Benachrichtigungseinstellungen", (d, w) -> openNotificationSettings())
                 .show();
     }
 

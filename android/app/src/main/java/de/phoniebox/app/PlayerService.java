@@ -52,6 +52,8 @@ public class PlayerService extends Service {
     private static final String ACTION = "action";
     private static final String STOP = "stop";
     private static final String STATE = "player_state";
+    /** true, solange der Dienst mit sichtbarer Benachrichtigung läuft. */
+    static volatile boolean running;
     private static final long FAST = 5_000L;
     private static final long SLOW = 15_000L;
     private static final long GIVE_UP = 2 * 60_000L;
@@ -115,17 +117,21 @@ public class PlayerService extends Service {
         Box.prefs(context).edit().putString(STATE, time + " " + state).apply();
     }
 
+    /** Ob Android die Player-Benachrichtigung gerade führt. */
+    static boolean visible(Context context) {
+        for (android.service.notification.StatusBarNotification n
+                : context.getSystemService(NotificationManager.class).getActiveNotifications()) {
+            if (n.getId() == ID) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Alles, was bestimmt, ob der Player zu sehen ist. */
     static String diagnosis(Context context) {
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         NotificationChannel channel = manager.getNotificationChannel(CHANNEL);
-        boolean running = false;
-        for (android.app.ActivityManager.RunningServiceInfo info
-                : context.getSystemService(android.app.ActivityManager.class).getRunningServices(50)) {
-            if (PlayerService.class.getName().equals(info.service.getClassName())) {
-                running = info.foreground || running;
-            }
-        }
         String permission = Build.VERSION.SDK_INT < 33 ? "nicht nötig (vor Android 13)"
                 : context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                 == android.content.pm.PackageManager.PERMISSION_GRANTED ? "erteilt" : "nicht erteilt";
@@ -138,6 +144,7 @@ public class PlayerService extends Service {
                 : "an (Wichtigkeit " + channel.getImportance() + ")")
                 + "\nPlayer eingeschaltet: " + (Box.playerEnabled(context) ? "ja" : "nein")
                 + "\nDienst läuft: " + (running ? "ja" : "nein")
+                + "\nBenachrichtigung aktiv: " + (visible(context) ? "ja" : "nein")
                 + "\nZuletzt: " + Box.prefs(context).getString(STATE, "noch nie gestartet");
     }
 
@@ -213,6 +220,7 @@ public class PlayerService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
+        running = true;
         note(this, "läuft, Benachrichtigung gezeigt");
         String action = intent == null ? null : intent.getStringExtra(ACTION);
         if (STOP.equals(action)) {
@@ -230,6 +238,7 @@ public class PlayerService extends Service {
 
     @Override
     public void onDestroy() {
+        running = false;
         unregisterReceiver(screen);
         worker.removeCallbacksAndMessages(null);
         thread.quitSafely();
