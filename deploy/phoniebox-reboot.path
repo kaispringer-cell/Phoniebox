@@ -1,0 +1,7 @@
+[Unit]
+Description=Phoniebox reboot request watcher
+[Path]
+PathExists=/var/lib/phoniebox/reboot.request
+Unit=phoniebox-reboot.service
+[Install]
+WantedBy=multi-user.target

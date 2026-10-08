@@ -1,0 +1,8 @@
+# On Raspberry Pi OS use install.sh and Debian's maintained python3-* packages.
+# These ranges are only for development/testing outside Debian.
+Flask>=3.1,<4
+cryptography>=43
+requests>=2.32,<3
+waitress>=3,<4
+evdev>=1.7,<2; sys_platform == 'linux'
+pytest>=8,<10

@@ -1,0 +1,34 @@
+[Unit]
+Description=NFC Spotify Phoniebox
+Wants=network-online.target
+After=network-online.target sound.target
+
+[Service]
+Type=simple
+User=phoniebox
+Group=phoniebox
+SupplementaryGroups=audio phoniebox-nfc
+WorkingDirectory=/opt/phoniebox
+ExecStartPre=/usr/bin/python3 /opt/phoniebox/configure_audio.py
+ExecStart=/usr/bin/python3 /opt/phoniebox/run.py
+Environment=PHONIEBOX_DATA=/var/lib/phoniebox
+Environment=PYTHONDONTWRITEBYTECODE=1
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
+StateDirectory=phoniebox
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ReadWritePaths=/var/lib/phoniebox
+KillMode=control-group
+
+[Install]
+WantedBy=multi-user.target

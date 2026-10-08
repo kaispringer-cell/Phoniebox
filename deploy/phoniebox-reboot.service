@@ -1,0 +1,7 @@
+[Unit]
+Description=Reboot requested through Phoniebox
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rm -f /var/lib/phoniebox/reboot.request
+ExecStart=/usr/bin/sleep 3
+ExecStart=/usr/bin/systemctl reboot

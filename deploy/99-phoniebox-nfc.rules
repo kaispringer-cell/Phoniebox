@@ -1,0 +1,1 @@
+SUBSYSTEM=="input", KERNEL=="event*", SYMLINK=="input/by-id/usb-413d_2107-event-kbd", GROUP:="phoniebox-nfc", MODE:="0660"
