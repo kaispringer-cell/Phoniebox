@@ -456,6 +456,12 @@ def create_app(directory=None, start_hardware=False):
             notifications=notices.current(),
         )
 
+    @app.get('/api/csrf')
+    def csrf_token():
+        # For the Android app's player notification: it sends player commands without a
+        # page, so it fetches the session's token here. Other sites cannot read this JSON.
+        return jsonify(csrf=session['csrf'])
+
     @app.get('/api/hardware')
     def hardware():
         return jsonify(hw.snapshot())

@@ -12,6 +12,10 @@ Voraussetzungen: Android 10 oder neuer, Handy im selben WLAN wie die Box, App 1.
 
 Neuere Versionen lassen sich einfach über die alte installieren.
 
+## Player in der Benachrichtigungsleiste
+
+Ab App 1.3.0 (und App 1.22.0 auf dem Pi) zeigt die App einen Player in der Benachrichtigungsleiste, ab Android 13 auch in den Mediensteuerungen der Schnelleinstellungen und auf dem Sperrbildschirm: Albumcover, Titel, Interpret, Fortschritt und Zurück, Start/Pause, Weiter. Antippen öffnet die App. Er startet beim Öffnen der App und bleibt, solange die Box erreichbar ist (bei laufender Musik Abfrage alle 5 Sekunden, sonst alle 15, bei ausgeschaltetem Bildschirm keine). Ist die Box länger als 2 Minuten nicht erreichbar oder wird er weggewischt, verschwindet er bis zum nächsten Öffnen der App. Abschalten im App-Menü.
+
 ## Benachrichtigungen
 
 Die Box meldet über `GET /api/notifications` (siehe `notifications.py` im Hauptverzeichnis), was gerade nicht stimmt:
@@ -28,7 +32,7 @@ Ein Problem meldet die Box erst, wenn es 30 Sekunden anhält. Die App zeigt jede
 
 Die App fragt im Hintergrund etwa alle 15 Minuten nach (häufiger lässt Android das ohne Daueranzeige nicht zu), nur im WLAN, und bei geöffneter App alle 30 Sekunden. Ist die Box nicht erreichbar, etwa weil das Handy unterwegs ist, ändert sich nichts. Abschalten lassen sich die Benachrichtigungen im App-Menü oder in den Android-Einstellungen der App.
 
-Die App hat keine eigene Menüleiste. Das App-Menü öffnet der Button ☰ oben rechts in der Weboberfläche (nur in der App sichtbar, ab App 1.20.1 auf dem Pi, ab 1.20.2 als Dialog im Design der Weboberfläche mit dem aktuellen Status der Box; die Seite findet die App über die JavaScript-Brücke `window.PhonieboxApp`). Ist die Box nicht erreichbar, steht das Menü auf der Fehlerseite. Einträge: Status jetzt prüfen, Benachrichtigungen an/aus, Neu laden, Zertifikat neu bestätigen (nach einer Neuinstallation der Box, die ein neues Zertifikat erzeugt).
+Die App hat keine eigene Menüleiste. Das App-Menü öffnet der Button ☰ oben rechts in der Weboberfläche (nur in der App sichtbar, ab App 1.20.1 auf dem Pi, ab 1.20.2 als Dialog im Design der Weboberfläche mit dem aktuellen Status der Box; die Seite findet die App über die JavaScript-Brücke `window.PhonieboxApp`). Ist die Box nicht erreichbar, steht das Menü auf der Fehlerseite. Einträge: Status jetzt prüfen, Benachrichtigungen an/aus, Player in der Leiste an/aus, Neu laden, Zertifikat neu bestätigen (nach einer Neuinstallation der Box, die ein neues Zertifikat erzeugt).
 
 ## Bauen
 
@@ -41,4 +45,4 @@ gradle -p android assembleDebug
 
 Die Version steht in `android/VERSION`; für ein neues Release erhöhen und einen Abschnitt in `android/CHANGELOG.md` ergänzen. Die APK ist mit dem Debug-Schlüssel `android/debug.keystore` signiert, der absichtlich im Repository liegt: So lässt sich jede neue APK über die vorige installieren. Der Schlüssel schützt nichts; wer ihn hat, kann eine APK bauen, die sich als Update dieser App installieren lässt. Installiert wird sie trotzdem nur, wenn jemand sie auf dem Handy selbst öffnet.
 
-Die App ist reines Java ohne Bibliotheken: `MainActivity` (WebView, Zertifikatsabfrage, Menü), `Box` (Adresse, Zertifikat-Pinning, Abfrage), `Notifier` (Benachrichtigungen), `StatusJob` (Hintergrundprüfung per JobScheduler).
+Die App ist reines Java ohne Bibliotheken: `MainActivity` (WebView, Zertifikatsabfrage, Menü), `Box` (Adresse, Zertifikat-Pinning, Abfrage), `Notifier` (Benachrichtigungen), `StatusJob` (Hintergrundprüfung per JobScheduler), `PlayerService` (Player in der Benachrichtigungsleiste: Vordergrunddienst mit `MediaSession`, fragt `GET /api/player` ab und sendet `POST /api/player/<aktion>` mit dem Token aus `GET /api/csrf`).

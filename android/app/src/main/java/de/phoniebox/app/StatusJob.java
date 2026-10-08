@@ -37,6 +37,9 @@ public class StatusJob extends JobService {
         new Thread(() -> {
             try {
                 Notifier.apply(this, Box.status(this));
+                // Box wieder erreichbar: Player zurück in die Leiste. Ab Android 12 lässt das
+                // System das aus dem Hintergrund meist nicht zu, dann beim Öffnen der App.
+                PlayerService.start(this);
             } catch (Exception ignored) {
                 // Nicht im Heim-WLAN oder Box aus: beim nächsten Mal erneut.
             }
