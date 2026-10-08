@@ -26,3 +26,13 @@ nav a:hover,nav a:focus-visible{background:transparent}
 .card-group{margin-top:28px}.card-group-title{display:flex;align-items:center;gap:10px;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--line)}.card-count{font-size:11px;letter-spacing:0;font-weight:700;color:var(--muted);background:#eef3ef;border-radius:20px;padding:1px 9px}.notice.error{background:#fbeceb;border-left-color:#a23f42}[data-theme=dark] .notice.error{background:#4a2c2e;border-left-color:#ffb9bd}[data-theme=dark] .card-count{background:#29483b}
 a.button{display:inline-flex;align-items:center;font-size:14px;font-weight:700;border:1px solid transparent;border-radius:12px;padding:11px 18px;min-height:44px;background:var(--accent);color:white;text-decoration:none}a.button.quiet{background:#eef3ef;color:var(--text);border-color:var(--line)}.alarm-list{margin-bottom:8px}.alarm-time{font-size:1.6rem;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.badge{display:inline-block;vertical-align:middle;font-size:11px;font-weight:750;border-radius:20px;padding:2px 10px;margin-left:6px}.badge.on{background:#dcefe5;color:#0f6553}.badge.off{background:#eceeec;color:var(--muted)}.card.off .alarm-time{color:var(--muted)}.card.editing{box-shadow:inset 4px 0 0 var(--accent);padding-left:16px}.form-title{margin:28px 0 4px}.alarm-form .actions{margin-top:8px}[data-theme=dark] a.button.quiet{background:#293e34;color:var(--text);border-color:var(--line)}[data-theme=dark] .badge.on{background:#29483b;color:#9fe4c2}[data-theme=dark] .badge.off{background:#2a3431}
 @media(min-width:721px){.alarm-list .actions{flex-wrap:nowrap;flex:none}.alarm-list .card>div:first-child{flex:1}}
+/* "Neue NFC-Karte" wizard */
+dialog#new-card-dialog{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:28px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:22px}
+dialog#new-card-dialog::backdrop{background:rgba(16,28,27,.55)}
+.wizard-results{max-height:320px;overflow:auto}
+.wizard-close{justify-content:flex-end;margin-top:16px}
+.nfc-wait{display:grid;place-items:center;height:96px}
+.nfc-wait i{display:block;width:56px;height:56px;border-radius:50%;border:4px solid var(--accent);animation:nfc-pulse 1.6s ease-out infinite}
+@keyframes nfc-pulse{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.4);opacity:0}}
+@media(prefers-reduced-motion:reduce){.nfc-wait i{animation:none}}
+@media(max-width:720px){dialog#new-card-dialog{padding:20px}}

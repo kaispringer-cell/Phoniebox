@@ -424,6 +424,23 @@ def create_app(directory=None, start_hardware=False):
         flash('Karte gespeichert. Die zugeordnete Aktion wird beim Auflegen ausgeführt.')
         return redirect('/#cards')
 
+    @app.post('/api/cards/music')
+    def new_music_card():
+        """Last step of the "Neue NFC-Karte" wizard: the card was just learned and a Spotify
+        result picked. Returns the open.spotify.com link so the browser can also write it onto
+        the card itself (Web NFC); the box's reader only reads card IDs and cannot write."""
+        uid = request.form.get('uid', '').strip()
+        name = request.form.get('name', '').strip()
+        if not re.fullmatch(r'[0-9]{1,32}', uid):
+            raise Problem('Keine Karte erkannt. Karte erneut auflegen.')
+        if not 1 <= len(name) <= 100:
+            raise Problem('Name fehlt oder ist länger als 100 Zeichen.')
+        uri = normalize_uri(request.form.get('uri', ''))
+        store.save_card(uid, name, uri)
+        hw.cancel()
+        _, kind, item = uri.split(':')
+        return jsonify(ok=True, uid=uid, name=name, uri=uri, url=f'https://open.spotify.com/{kind}/{item}')
+
     @app.post('/cards/delete')
     def delete_card():
         store.delete_card(request.form.get('uid', ''))

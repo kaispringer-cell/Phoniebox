@@ -40,7 +40,7 @@ Die Wiedergabe arbeitet zweigleisig:
 | `deploy/` | `phoniebox.service`, `phoniebox-reboot.path`/`.service` (Neustart-Helfer), `bluealsa-override.conf` (`--keep-alive=5`), `nginx.conf`, udev-Regel `99-phoniebox-nfc.rules` |
 | `templates/`, `static/` | Eine Seite (`index.html` auf `base.html`), `app.js` (Polling und Formulare), `style.css` |
 | `release.json`, `VERSION` | Manifest und Version des Update-Pakets |
-| `tests/` | pytest-Tests (56) |
+| `tests/` | pytest-Tests (67) |
 
 ## Threads und Laufzeitverhalten
 
@@ -112,6 +112,7 @@ Alle POST-Anfragen brauchen ein CSRF-Token (Formularfeld `csrf` oder Header `X-C
 | `POST /credentials` | Client-ID und Client Secret speichern (löscht bei Änderung die Tokens) |
 | `POST /oauth/start`, `GET /callback`, `POST /disconnect` | Spotify verbinden und trennen (nur über den Tunnel, außer `/disconnect`) |
 | `POST /cards`, `POST /cards/delete` | Karte anlegen, ändern, löschen |
+| `POST /api/cards/music` | Letzter Schritt des Assistenten „Neue NFC-Karte“: Musik-Karte (`uid`, `name`, `uri`) speichern, Anlernmodus beenden; liefert zusätzlich den `open.spotify.com`-Link (`url`), den der Browser per Web NFC auf die Karte schreiben kann |
 | `GET /api/spotify/search` | Album-/Titel-/Playlist-Suche für die Kartenerfassung (`?q=…`, mindestens 1 Zeichen; optional `type=track\|album\|playlist` zur Eingrenzung, sonst alle drei gemischt); leeres oder fehlendes `q` liefert `[]` ohne Spotify-Aufruf, ein unbekannter `type` einen `Problem`-Fehler |
 | `POST /alarm` | Wecker anlegen oder ändern (Feld `id`) |
 | `POST /alarm/enabled`, `POST /alarm/delete` | Wecker ein-/ausschalten, löschen |

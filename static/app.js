@@ -76,11 +76,10 @@ function loadCard(card) {
 $('card-action').addEventListener('change',cardFields);
 cardFields();
 const searchLabels={track:'Titel',album:'Album',playlist:'Playlist'};
-function renderCardSearchResults(items) {
-  const box=$('card-search-results');
+function renderSearchResults(box,status,items,label,onPick) {
   box.textContent='';
   box.hidden=!items.length;
-  $('card-search-status').textContent=items.length ? '' : 'Nichts gefunden.';
+  status.textContent=items.length ? '' : 'Nichts gefunden.';
   items.forEach(item=>{
     const article=document.createElement('article'); article.className='card';
     if (item.image) { const img=document.createElement('img'); img.src=item.image; img.alt=''; img.className='thumb'; article.appendChild(img); }
@@ -91,14 +90,17 @@ function renderCardSearchResults(items) {
     info.appendChild(p);
     article.appendChild(info);
     const actions=document.createElement('div'); actions.className='actions';
-    const button=document.createElement('button'); button.type='button'; button.textContent='Übernehmen';
-    button.addEventListener('click',()=>{
-      $('card-uri').value=item.uri;
-      if (!$('card-name').value.trim()) $('card-name').value=item.name;
-      clearCardSearch();
-    });
+    const button=document.createElement('button'); button.type='button'; button.textContent=label;
+    button.addEventListener('click',()=>onPick(item));
     actions.appendChild(button); article.appendChild(actions);
     box.appendChild(article);
+  });
+}
+function renderCardSearchResults(items) {
+  renderSearchResults($('card-search-results'),$('card-search-status'),items,'Übernehmen',item=>{
+    $('card-uri').value=item.uri;
+    if (!$('card-name').value.trim()) $('card-name').value=item.name;
+    clearCardSearch();
   });
 }
 let cardSearchTimer, cardSearchToken=0;
@@ -127,6 +129,98 @@ document.querySelectorAll('.edit-card').forEach(button=>button.addEventListener(
   $('uid').value=button.dataset.uid; $('card-name').value=button.dataset.name; $('card-uri').value=button.dataset.uri; $('uid').scrollIntoView({block:'center'}); $('card-name').focus();
 }));
 document.querySelectorAll('.delete-card').forEach(form=>form.addEventListener('submit',event=>{if(!confirm('Diese Kartenzuordnung löschen?'))event.preventDefault();}));
+// "Neue NFC-Karte": learn a card, pick Spotify music, save. The box's reader only reads
+// card IDs; writing the link onto the card itself needs Web NFC (Chrome on Android).
+const wizard={uid:'',pick:null,url:'',saved:false,timer:null,searchTimer:null,searchToken:0};
+function wizardStep(name){['scan','search','done'].forEach(step=>{$('wizard-'+step).hidden=step!==name;});}
+function wizardStopPolling(){clearTimeout(wizard.timer); wizard.timer=null;}
+async function wizardStart(){
+  wizardStopPolling();
+  Object.assign(wizard,{uid:'',pick:null,url:''});
+  wizardStep('scan'); $('wizard-retry').hidden=true;
+  $('wizard-scan-status').textContent='Lege jetzt die neue NFC-Karte auf den Reader der Phoniebox.';
+  try { await api('/api/learn',{}); } catch(e){ $('wizard-scan-status').textContent=e.message; $('wizard-retry').hidden=false; return; }
+  const until=Date.now()+60000;
+  const poll=async()=>{
+    if(!$('new-card-dialog').open) return;
+    try {
+      const h=await api('/api/hardware');
+      if(h.learned){ wizardFound(h.learned,h.card); return; }
+      if(!h.learning || Date.now()>until){ $('wizard-scan-status').textContent='Keine Karte erkannt. Karte auflegen und erneut versuchen.'; $('wizard-retry').hidden=false; return; }
+    } catch(e){ $('wizard-scan-status').textContent=e.message; }
+    wizard.timer=setTimeout(poll,1000);
+  };
+  poll();
+}
+function wizardFound(uid,card){
+  wizard.uid=uid;
+  $('wizard-card').textContent=card
+    ? 'Karte '+uid+' erkannt. Sie ist bisher „'+card.name+'“ zugeordnet und wird beim Speichern überschrieben.'
+    : 'Karte '+uid+' erkannt. Jetzt Musik bei Spotify suchen.';
+  $('wizard-query').value=''; $('wizard-results').hidden=true; $('wizard-results').textContent=''; $('wizard-search-status').textContent='';
+  $('wizard-pick').hidden=true;
+  wizardStep('search'); $('wizard-query').focus();
+}
+function wizardSearch(delay){
+  clearTimeout(wizard.searchTimer);
+  const query=$('wizard-query').value.trim();
+  $('wizard-results').hidden=true; $('wizard-results').textContent='';
+  if(query.length<2){ $('wizard-search-status').textContent=''; return; }
+  $('wizard-search-status').textContent='Suche läuft …';
+  wizard.searchTimer=setTimeout(async()=>{
+    const token=++wizard.searchToken;
+    try {
+      const type=$('wizard-type').value;
+      const r=await api('/api/spotify/search?q='+encodeURIComponent(query)+(type?'&type='+encodeURIComponent(type):''));
+      if(token!==wizard.searchToken) return;
+      renderSearchResults($('wizard-results'),$('wizard-search-status'),r.results,'Auswählen',item=>{
+        wizard.pick=item;
+        $('wizard-name').value=item.name;
+        $('wizard-choice').textContent=(searchLabels[item.type]||item.type)+(item.artist?' · '+item.artist:'')+' · '+item.uri;
+        $('wizard-results').hidden=true; $('wizard-pick').hidden=false; $('wizard-name').focus();
+      });
+    } catch(e){ if(token===wizard.searchToken) $('wizard-search-status').textContent=e.message; }
+  },delay);
+}
+$('wizard-query').addEventListener('input',()=>wizardSearch(400));
+$('wizard-type').addEventListener('change',()=>wizardSearch(0));
+$('wizard-back').addEventListener('click',()=>{ $('wizard-pick').hidden=true; wizard.pick=null; wizardSearch(0); $('wizard-query').focus(); });
+$('wizard-save').addEventListener('click',async()=>{
+  if(!wizard.pick) return;
+  $('wizard-save').disabled=true;
+  try {
+    const r=await api('/api/cards/music',{uid:wizard.uid,name:$('wizard-name').value,uri:wizard.pick.uri});
+    wizard.url=r.url; wizard.saved=true;
+    $('wizard-done-status').textContent='Fertig: Karte '+r.uid+' spielt jetzt „'+r.name+'“. Auflegen und loshören.';
+    const canWrite='NDEFReader' in window && window.isSecureContext;
+    $('wizard-write').hidden=!canWrite;
+    $('wizard-write-hint').textContent=canWrite
+      ? 'Optional: Den Spotify-Link zusätzlich direkt auf die Karte schreiben. Dann öffnet auch ein Handy die Musik. Dafür auf „Link auf die Karte schreiben“ tippen und die Karte an die Rückseite dieses Handys halten.'
+      : 'Den Spotify-Link zusätzlich direkt auf die Karte schreiben geht nur mit Chrome auf einem Android-Handy. Für die Phoniebox ist das nicht nötig.';
+    wizardStep('done');
+  } catch(e){ feedback(e.message); $('wizard-search-status').textContent=e.message; }
+  finally { $('wizard-save').disabled=false; }
+});
+$('wizard-write').addEventListener('click',async()=>{
+  $('wizard-write').disabled=true;
+  $('wizard-write-hint').textContent='Karte jetzt an die Rückseite des Handys halten …';
+  try {
+    await new NDEFReader().write({records:[{recordType:'url',data:wizard.url}]});
+    $('wizard-write-hint').textContent='Link auf die Karte geschrieben: '+wizard.url;
+  } catch(e){
+    $('wizard-write-hint').textContent='Schreiben fehlgeschlagen: '+(e.name==='NotAllowedError'?'NFC-Zugriff nicht erlaubt.':e.message)+' Die Zuordnung in der Phoniebox ist trotzdem gespeichert.';
+  } finally { $('wizard-write').disabled=false; }
+});
+$('new-card').addEventListener('click',()=>{ $('new-card-dialog').showModal(); wizardStart(); });
+$('wizard-retry').addEventListener('click',wizardStart);
+$('wizard-again').addEventListener('click',wizardStart);
+$('wizard-cancel').addEventListener('click',()=>$('new-card-dialog').close());
+$('new-card-dialog').addEventListener('close',()=>{
+  wizardStopPolling();
+  api('/api/learn/cancel',{}).catch(()=>{});
+  // Reload so the new cards show up in the list below.
+  if(wizard.saved) { location.hash='#cards'; location.reload(); }
+});
 let wasLearning=false;
 let displayedScan=null;
 // A card changes the music without anything on this page being clicked. Without this the
