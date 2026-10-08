@@ -113,7 +113,7 @@ Im Bereich **Bluetooth** der Weboberfläche lassen sich Lautsprecher suchen (10 
 
 ## Updates
 
-Im Desktop-Installer verbinden, unter Updates das gewünschte `phoniebox-x.y.z.tar.gz` auswählen und installieren. Kein Onlinekatalog ist eingerichtet, nur vertrauenswürdige Pakete verwenden.
+Im Desktop-Installer verbinden, unter Updates **Von GitHub laden** wählen (ab Installer 2.8.18) oder ein lokales `phoniebox-x.y.z.tar.gz` auswählen, dann installieren. Der Download holt das neueste Release aus diesem Repository und prüft die mitgelieferte SHA256-Prüfsumme. Lokal nur vertrauenswürdige Pakete verwenden.
 
 Der Updater sichert App und Daten unter `/var/backups/phoniebox`, installiert fehlende Paketabhängigkeiten, führt Datenbankmigrationen aus und stellt bei einem fehlgeschlagenen Starttest den vorherigen Stand wieder her. Karten, Einstellungen und Secrets bleiben erhalten. Kein librespot-Build, keine Änderung an nginx, systemd oder Boot-Einstellungen. Stromausfälle während des Updates sind nicht abgesichert. Details stehen in [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md#update-paket-und-updater).
 
@@ -159,6 +159,16 @@ Sie ist dann unter `http://127.0.0.1:8888` erreichbar. Reader und Player melden 
 Die Tests simulieren Spotify, SSH- und Neustartbedingungen. Nicht Teil dieses Archivs ist der Desktop-Installer samt seinen Tests. Die vollständige Erstinstallation und die hörbare Ausgabe sind bisher nicht auf echter Hardware als getestet ausgewiesen.
 
 Wer Dateien hinzufügt oder ändert, die per Update ausgeliefert werden, muss `VERSION` und `release.json` erhöhen und neue Dateien in `release.json` eintragen, sonst lehnt der Updater das Paket ab beziehungsweise installiert sie nicht. Einzelheiten stehen in der Architekturdokumentation.
+
+### Release veröffentlichen
+
+Nach dem Merge auf `main` einen Tag mit der Version aus `VERSION` setzen und pushen:
+
+```bash
+git tag v1.18.2 && git push origin v1.18.2
+```
+
+Die Action `.github/workflows/release.yml` lässt die Tests laufen, baut mit `scripts/build-package.sh` das Paket `phoniebox-1.18.2.tar.gz` (alle Dateien unter `phoniebox/`, wie der Updater es verlangt) samt `.sha256` und legt ein Release mit dem passenden CHANGELOG-Abschnitt an. Passen Tag, `VERSION` und `release.json` nicht zusammen oder fehlt der CHANGELOG-Abschnitt, bricht sie ab. Die automatischen Quellarchive von GitHub sind keine gültigen App-Pakete, weil ihr Ordner anders heißt.
 
 ## Bekannte Einschränkungen
 

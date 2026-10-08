@@ -1,0 +1,4 @@
+# Nicht ins App-Paket (scripts/build-package.sh nutzt git archive).
+.gitattributes export-ignore
+.github export-ignore
+scripts export-ignore
