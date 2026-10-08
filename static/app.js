@@ -24,7 +24,11 @@ async function player() {
     $('player-message').textContent = p.active ? (p.playing ? 'Wiedergabe läuft' : 'Pausiert') : p.message;
     $('playback-status').textContent = $('player-message').textContent;
     $('title').textContent = p.title || 'Bereit für deine Musik.';
-    $('artist').textContent = p.artist || '';
+    // Band name replaces the "Willkommen" kicker while something plays, so it is not shown twice.
+    const band = p.active ? (p.artist || '') : '';
+    $('player-kicker').textContent = band || 'WILLKOMMEN';
+    $('artist').textContent = band ? '' : (p.artist || '');
+    $('artist').hidden = !!band;
     $('cover').hidden = !p.cover; $('placeholder').hidden = !!p.cover;
     $('cover').classList.toggle('station-logo', p.source === 'radio');
     $('cover').alt = p.source === 'radio' ? 'Senderlogo: ' + p.title : 'Albumcover';
