@@ -16,6 +16,7 @@ import android.graphics.drawable.Icon;
 import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -30,6 +31,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -47,6 +51,7 @@ public class PlayerService extends Service {
     private static final int ID = 2;
     private static final String ACTION = "action";
     private static final String STOP = "stop";
+    private static final String STATE = "player_state";
     private static final long FAST = 5_000L;
     private static final long SLOW = 15_000L;
     private static final long GIVE_UP = 2 * 60_000L;
@@ -90,13 +95,50 @@ public class PlayerService extends Service {
 
     /** Startet den Player, wenn er eingeschaltet und das Zertifikat der Box bestätigt ist. */
     static void start(Context context) {
-        if (Box.playerEnabled(context) && Box.pin(context) != null) {
+        if (!Box.playerEnabled(context)) {
+            note(context, "ausgeschaltet");
+        } else if (Box.pin(context) == null) {
+            note(context, "wartet auf das bestätigte Zertifikat der Box");
+        } else {
             try {
                 context.startForegroundService(new Intent(context, PlayerService.class));
-            } catch (IllegalStateException ignored) {
-                // Android erlaubt den Start aus dem Hintergrund nicht; beim Öffnen der App erneut.
+            } catch (RuntimeException e) {
+                // Etwa: Android erlaubt den Start aus dem Hintergrund nicht; beim Öffnen der App erneut.
+                note(context, "Start von Android abgelehnt: " + e);
             }
         }
+    }
+
+    /** Merkt sich, was der Player zuletzt getan hat, für die Diagnose in Menü und Seitenleiste. */
+    static void note(Context context, String state) {
+        String time = new SimpleDateFormat("HH:mm:ss", Locale.GERMANY).format(new Date());
+        Box.prefs(context).edit().putString(STATE, time + " " + state).apply();
+    }
+
+    /** Alles, was bestimmt, ob der Player zu sehen ist. */
+    static String diagnosis(Context context) {
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        NotificationChannel channel = manager.getNotificationChannel(CHANNEL);
+        boolean running = false;
+        for (android.app.ActivityManager.RunningServiceInfo info
+                : context.getSystemService(android.app.ActivityManager.class).getRunningServices(50)) {
+            if (PlayerService.class.getName().equals(info.service.getClassName())) {
+                running = info.foreground || running;
+            }
+        }
+        String permission = Build.VERSION.SDK_INT < 33 ? "nicht nötig (vor Android 13)"
+                : context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED ? "erteilt" : "nicht erteilt";
+        return "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + "), "
+                + Build.MANUFACTURER + " " + Build.MODEL
+                + "\nBenachrichtigungen erlaubt: " + (manager.areNotificationsEnabled() ? "ja" : "nein")
+                + "\nBerechtigung: " + permission
+                + "\nKanal „Player“: " + (channel == null ? "fehlt"
+                : channel.getImportance() == NotificationManager.IMPORTANCE_NONE ? "ausgeschaltet"
+                : "an (Wichtigkeit " + channel.getImportance() + ")")
+                + "\nPlayer eingeschaltet: " + (Box.playerEnabled(context) ? "ja" : "nein")
+                + "\nDienst läuft: " + (running ? "ja" : "nein")
+                + "\nZuletzt: " + Box.prefs(context).getString(STATE, "noch nie gestartet");
     }
 
     static void stop(Context context) {
@@ -164,10 +206,18 @@ public class PlayerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Android verlangt die Benachrichtigung sofort nach dem Start.
-        startForeground(ID, build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        try {
+            startForeground(ID, build(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        } catch (RuntimeException e) {
+            note(this, "Benachrichtigung von Android abgelehnt: " + e);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+        note(this, "läuft, Benachrichtigung gezeigt");
         String action = intent == null ? null : intent.getStringExtra(ACTION);
         if (STOP.equals(action)) {
             // Weggewischt: bis zum nächsten Öffnen der App kein Player.
+            note(this, "weggewischt, kommt beim nächsten Öffnen der App wieder");
             stopSelf();
         } else if (action != null) {
             send(action);
@@ -226,6 +276,7 @@ public class PlayerService extends Service {
             if (unreachableSince == 0) {
                 unreachableSince = now;
             } else if (now - unreachableSince > GIVE_UP) {
+                note(this, "beendet, Box 2 Minuten nicht erreichbar: " + e.getMessage());
                 stopSelf();
                 return;
             }

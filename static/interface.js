@@ -94,6 +94,19 @@
         document.getElementById('app-player-row').hidden = false;
         player.addEventListener('change', () => app.setPlayer(player.checked));
       }
+      // Ab Android-App 1.3.2: Befund, warum der Player (nicht) zu sehen ist.
+      const diag = document.getElementById('app-player-diag');
+      if (hasPlayer && typeof app.playerDiagnosis === 'function') {
+        const diagText = document.getElementById('app-player-diag-text');
+        const showDiag = () => { diagText.textContent = app.playerDiagnosis(); };
+        diag.hidden = false;
+        diag.addEventListener('toggle', () => { if (diag.open) showDiag(); });
+        document.getElementById('app-player-start').addEventListener('click', () => {
+          app.startPlayer();
+          diagText.textContent = 'Player wird gestartet …';
+          setTimeout(showDiag, 1500);
+        });
+      }
       // Ab Android-App 1.3.1: Hinweis, wenn Android die Benachrichtigungen blockiert.
       const blocked = document.getElementById('app-blocked');
       const canAsk = typeof app.notificationsAllowed === 'function';

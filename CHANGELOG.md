@@ -1,3 +1,8 @@
+# 1.23.1
+
+- In der Seitenleiste unter „Player in der Benachrichtigungsleiste“ gibt es die aufklappbare **Player-Diagnose** mit dem Button „Player starten und prüfen“ (ab Android-App 1.3.2).
+- Test erweitert. Installer 2.8.18 weiterverwenden.
+
 # 1.23.0
 
 - „Die Tabs möchte ich lieber in einer Seitenleiste. Dort soll sich das App-Steuerungsmenü nahtlos einfügen. Achte darauf, das verschiedene Bildschirmdemensionen beachtet werden und bei Bedarf gescrollt wird. Auch soll das Menü je nach Bildschirmgröße automatisch ausgeklappt werden.“ – Die Bereiche (Player, NFC-Karten, Radio, Wecker, Spotify, Bluetooth, Einstellungen) stehen jetzt mit Symbolen in einer Seitenleiste links, unten der Hell/Dunkel-Schalter.

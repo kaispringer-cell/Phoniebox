@@ -118,7 +118,8 @@ public class MainActivity extends Activity {
         super.onResume();
         web.onResume();
         handler.post(poll);
-        PlayerService.start(this);
+        // Erst nach dem Fortsetzen: Dann zählt die App für Android sicher als im Vordergrund.
+        handler.post(() -> PlayerService.start(this));
     }
 
     @Override
@@ -156,6 +157,7 @@ public class MainActivity extends Activity {
                 "Neu laden",
                 "Zertifikat neu bestätigen",
                 allowed ? "Benachrichtigungseinstellungen" : "Benachrichtigungen in Android erlauben (aus)",
+                "Player-Diagnose",
         };
         new AlertDialog.Builder(this)
                 .setTitle("Phoniebox-App " + appVersion())
@@ -176,8 +178,11 @@ public class MainActivity extends Activity {
                         case 4:
                             resetCertificate();
                             break;
-                        default:
+                        case 5:
                             openNotificationSettings();
+                            break;
+                        default:
+                            showPlayerDiagnosis();
                     }
                 })
                 .show();
@@ -287,6 +292,21 @@ public class MainActivity extends Activity {
             });
         }
 
+        /** Startet den Player und liefert nach kurzer Zeit den Befund (siehe PlayerService.diagnosis). */
+        @JavascriptInterface
+        public String playerDiagnosis() {
+            return PlayerService.diagnosis(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void startPlayer() {
+            runOnUiThread(() -> {
+                if (fromBox()) {
+                    PlayerService.start(MainActivity.this);
+                }
+            });
+        }
+
         @JavascriptInterface
         public void checkNow() {
             runOnUiThread(() -> {
@@ -383,6 +403,17 @@ public class MainActivity extends Activity {
                 .setPositiveButton("Einstellungen öffnen", (d, w) -> openNotificationSettings())
                 .setNegativeButton("Später", null)
                 .show();
+    }
+
+    /** Startet den Player erneut und zeigt danach, was Android dazu sagt. */
+    private void showPlayerDiagnosis() {
+        PlayerService.start(this);
+        handler.postDelayed(() -> new AlertDialog.Builder(this)
+                .setTitle("Player-Diagnose")
+                .setMessage(PlayerService.diagnosis(this))
+                .setPositiveButton("OK", null)
+                .setNeutralButton("Benachrichtigungseinstellungen", (d, w) -> openNotificationSettings())
+                .show(), 1500);
     }
 
     private void openNotificationSettings() {

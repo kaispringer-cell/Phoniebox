@@ -122,3 +122,4 @@ dialog#new-card::backdrop,dialog#app-dialog::backdrop{background:#0b1716b3}
 .topbar .brand{font-size:13px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 }
 @media(prefers-reduced-motion:reduce){.sidebar{transition:none}}
+.side-diag{margin:4px 0 10px;font-size:13px}.side-diag summary{cursor:pointer;color:var(--accent);font-weight:650;padding:6px 0}#app-player-diag-text{white-space:pre-line;overflow-wrap:anywhere}#app-player-start{width:100%}
