@@ -1,7 +1,11 @@
 """Single-process hardware workers. Never run multiple web workers."""
 
 import errno
+import json
+import os
 import queue
+import sys
+from pathlib import Path
 from contextlib import closing
 import select
 import subprocess
@@ -12,6 +16,7 @@ from configure_audio import device_reachable
 from spotify import Problem
 
 READER = '/dev/input/by-id/usb-413d_2107-event-kbd'
+EVENT_HELPER = Path(__file__).resolve().parent / 'librespot_event.py'
 
 
 def reader_error(error, phase):
@@ -74,6 +79,39 @@ class Hardware:
         self.local_audio = threading.Event()
         self.media = None
         self.jobs = queue.Queue(maxsize=1)
+
+    @property
+    def player_state_file(self):
+        return self.store.directory / 'librespot-state.json'
+
+    def now_playing(self):
+        """What librespot itself reports playing, or None when it reports nothing usable.
+
+        The Spotify Web API kept showing an old album for the Phoniebox while a card's album
+        was audibly playing, so the start page prefers librespot's own events."""
+        if self.local_audio.is_set() or not (self.process and self.process.poll() is None):
+            return None
+        try:
+            state = json.loads(self.player_state_file.read_text())
+        except (OSError, ValueError):
+            return None
+        if not isinstance(state, dict) or state.get('stopped') or not state.get('name'):
+            return None
+        position = int(state.get('position_ms') or 0)
+        if state.get('playing'):
+            position += int((time.time() - float(state.get('position_at') or time.time())) * 1000)
+        duration = int(state.get('duration_ms') or 0)
+        covers = (state.get('covers') or '').split()
+        return dict(
+            playing=bool(state.get('playing')),
+            title=state['name'],
+            artist=', '.join(a for a in (state.get('artists') or '').split('\n') if a) or state.get('show_name') or '',
+            album=state.get('album') or '',
+            cover=covers[0] if covers else '',
+            progress=min(position, duration) if duration else position,
+            duration=duration,
+            uri=state.get('uri') or '',
+        )
 
     def start(self):
         for fn in (self.player_loop, self.reader_loop, self.play_loop, self.bluetooth.loop):
@@ -319,12 +357,19 @@ class Hardware:
                     '--system-cache',
                     str(cache),
                     '--disable-audio-cache',
+                    '--onevent',
+                    f'{sys.executable} -I {EVENT_HELPER}',
                 ]
+                # librespot reports what it actually plays; see now_playing().
+                self.player_state_file.unlink(missing_ok=True)
+                env = {**os.environ, 'PHONIEBOX_PLAYER_STATE': str(self.player_state_file)}
                 # Suppress upstream output to avoid auth URLs/tokens entering journals.
                 with self.audio_lock:
                     if self.local_audio.is_set():
                         continue
-                    self.process = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    self.process = subprocess.Popen(
+                        args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env
+                    )
                 self.player_status = 'librespot läuft · Spotify-Verbindung separat prüfen'
                 while not self.stop.is_set() and not self.restart.wait(1):
                     if self.process.poll() is not None:

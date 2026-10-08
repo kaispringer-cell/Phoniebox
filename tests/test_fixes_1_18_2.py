@@ -72,19 +72,6 @@ def test_rejected_play_activates_and_retries_instead_of_failing():
     assert state['plays'] == 2
 
 
-def test_play_is_repeated_when_spotify_keeps_old_album():
-    def responses(method, path, body, calls):
-        if path == '/me/player/devices':
-            return devices(True)
-        if method == 'GET' and path == '/me/player':
-            return {'device': {'id': 'box'}, 'context': {'uri': OLD}}
-        return {}
-
-    sp, calls = make(responses)
-    sp.command('play', uri=ALBUM)
-    assert len([c for c in calls if c[1] == '/me/player/play']) == 2
-
-
 def test_state_is_not_cached_right_after_a_command():
     sp, _ = make(lambda *a: devices(True) if a[1] == '/me/player/devices' else {})
     sp.command('pause')

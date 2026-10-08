@@ -1,3 +1,9 @@
+# 1.18.3
+
+- „Der Player zeigt immer noch das selbe Album an, egal welche Karte aufgelegt wird.“ – Die Startseite las Titel, Interpret und Cover nur aus Spotifys Web-API (`/me/player`). Die meldete für die Phoniebox weiter ein altes Album, obwohl das Album der Karte hörbar lief. librespot meldet jetzt selbst bei jedem Titelwechsel, Play und Pause, was es spielt (`--onevent` mit dem neuen `librespot_event.py`, Datei `librespot-state.json` im Datenordner). Die Startseite zeigt bevorzugt diese Angaben und greift nur auf die Web-API zurück, wenn librespot nichts meldet.
+- Die erneute Abspielanfrage aus 1.18.2 nach 3 Sekunden entfällt: Sie prüfte gegen dieselbe unzuverlässige Web-API und hätte das Album dann bei jeder Karte neu gestartet.
+- 3 neue Tests. Installer 2.8.17 weiterverwenden. Nach dem Update startet der Player einmal neu. Noch nicht auf echter Hardware geprüft.
+
 # 1.18.2
 
 - „Ich muss NFC-Karten häufig 2x auflegen, bis das Album abgespielt wird.“ – War die Phoniebox in Spotify gerade nicht das aktive Gerät, wurde sie zuerst per Übertragung aktiviert und dann höchstens 4 Sekunden gewartet. Dauerte das länger, brach die Karte mit „Bitte Play gleich erneut drücken“ ab. Musik-Karten senden jetzt direkt den Abspielbefehl mit Gerät und Album; Spotify aktiviert die Box dabei selbst. Nur wenn Spotify das ablehnt, wird aktiviert (bis 8 Sekunden) und automatisch erneut gestartet.
