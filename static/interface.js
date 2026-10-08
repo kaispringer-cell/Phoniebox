@@ -61,7 +61,12 @@
         document.getElementById('app-player-row').hidden = false;
         player.addEventListener('change', () => app.setPlayer(player.checked));
       }
+      // Ab Android-App 1.3.1: Hinweis, wenn Android die Benachrichtigungen blockiert.
+      const blocked = document.getElementById('app-blocked');
+      const canAsk = blocked && typeof app.notificationsAllowed === 'function';
+      if (canAsk) document.getElementById('app-allow').addEventListener('click', () => app.openNotificationSettings());
       appButton.addEventListener('click', () => {
+        if (canAsk) blocked.hidden = app.notificationsAllowed();
         notify.checked = app.notificationsEnabled();
         if (hasPlayer) player.checked = app.playerEnabled();
         document.getElementById('app-version').textContent = 'Phoniebox-App ' + app.version();

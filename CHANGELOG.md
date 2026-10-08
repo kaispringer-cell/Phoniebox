@@ -2,7 +2,9 @@
 
 - Für den Player der Android-App 1.3.0 in der Benachrichtigungsleiste: Neuer Endpunkt `GET /api/csrf`, über den die App das Token ihrer Sitzung holt, um Start, Pause, Zurück und Weiter ohne geöffnete Seite zu senden. Andere Webseiten können die Antwort nicht lesen.
 - Im App-Dialog (☰) gibt es den Schalter „Player in der Benachrichtigungsleiste“, sobald die App ihn kennt (ab 1.3.0).
-- 2 neue Tests. Installer 2.8.18 weiterverwenden.
+- Blockiert Android die Benachrichtigungen der App (ab Android-App 1.3.1), zeigt der App-Dialog das mit dem Button „In Android erlauben“.
+- Der Release-Bau von 1.22.0 scheiterte, weil `release.json` noch 1.21.0 hatte. Ein Test prüft jetzt, dass beide Versionen übereinstimmen.
+- 3 neue Tests. Installer 2.8.18 weiterverwenden.
 
 # 1.21.0
 
