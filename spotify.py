@@ -43,7 +43,6 @@ class Spotify:
         self.cached_at = 0
         self.cached = None
         self.fresh_until = 0
-        self.started_uri = ''
 
     def authorize(self):
         verifier = secrets.token_urlsafe(64)
@@ -263,22 +262,6 @@ class Spotify:
                 raise
             self.activate(device_id, attempts=16)
             self.api('PUT', '/me/player/play', body, params)
-        self.started_uri = uri
-        # Spotify sometimes acknowledges a play request but keeps the previous content on a
-        # freshly activated Connect device. Check once and repeat the request if needed.
-        for _ in range(6):
-            time.sleep(0.5)
-            if self.reports(uri, device_id):
-                return
-        self.api('PUT', '/me/player/play', body, params)
-
-    def reports(self, uri, device_id):
-        state = self.api('GET', '/me/player') or {}
-        if (state.get('device') or {}).get('id') != device_id:
-            return False
-        item = state.get('item') or {}
-        album = item.get('album') or {}
-        return uri in ((state.get('context') or {}).get('uri'), item.get('uri'), album.get('uri'))
 
     def activate(self, device_id, attempts=8):
         self.api('PUT', '/me/player', {'device_ids': [device_id], 'play': False})

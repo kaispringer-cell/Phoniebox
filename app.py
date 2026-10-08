@@ -483,6 +483,30 @@ def create_app(directory=None, start_hardware=False):
                 source=local['source'],
                 url='',
             )
+        playing = hw.now_playing()
+        if playing:
+            # librespot's own report: the Web API kept showing an old album here.
+            try:
+                state = sp.state()
+            except Problem:
+                state = {}
+            device = state.get('device') or {}
+            cover = playing['cover'] if playing['cover'].startswith('https://i.scdn.co/') else ''
+            uri = playing['uri']
+            url = ''
+            if re.fullmatch(r'spotify:(track|episode):[A-Za-z0-9]{22}', uri):
+                url = 'https://open.spotify.com/' + '/'.join(uri.split(':')[1:])
+            return jsonify(
+                active=True,
+                playing=playing['playing'],
+                title=playing['title'],
+                artist=playing['artist'],
+                cover=cover,
+                progress=playing['progress'],
+                duration=playing['duration'],
+                volume=device.get('volume_percent') if device.get('name') == store.get('name') else None,
+                url=url,
+            )
         state = sp.state()
         if (state.get('device') or {}).get('name') != store.get('name'):
             return jsonify(
