@@ -1,3 +1,11 @@
+# 1.21.0
+
+- „Bauen wir einen weiteren Tab ein: Spotify. Dort soll man Spotify steuern können. Album oder Song aussuchen. Und bei gefallen: mit NFC verbinden. Dann öffnet sich der bekannte Dialog.“ – Der Tab **Spotify** zeigt oben, was gerade läuft, mit Zurück, Start, Pause, Weiter und Lautstärke. Darunter die Spotify-Suche (Album, Titel, Playlist oder Alles). Jedes Ergebnis hat **Abspielen** und **Mit NFC verbinden**, Alben zusätzlich **Titel**: Das zeigt die Titelliste des Albums (bei langen Hörspielen bis 200 Titel), jeder Titel lässt sich einzeln abspielen oder auf eine Karte legen.
+- **Mit NFC verbinden** öffnet den Dialog von „+ Neue Karte“ mit der gewählten Musik: Karte auflegen, Name prüfen, speichern. Die Suche wird übersprungen; „Andere Musik wählen“ führt wie bisher zur Suche.
+- Die bisherigen Spotify-Einstellungen (Client-ID, Verbinden, Trennen) stehen im selben Tab darunter unter „Verbindung“.
+- Neuer Endpunkt `GET /api/spotify/album?uri=…`. Der Dialog „Neue Karte“ liegt nicht mehr im NFC-Bereich, damit er auch aus dem Spotify-Tab erscheint. Bilder von Playlists (andere Spotify-Bildserver) werden jetzt angezeigt.
+- 5 neue Tests. Installer 2.8.18 weiterverwenden. Noch nicht auf echter Hardware geprüft.
+
 # 1.20.2
 
 - „Gestalte das Menü nun entsprechend, dass es zum Rest des Phoniebox designs passt.“ – Der Button ☰ in der Android-App öffnet jetzt einen Dialog der Weboberfläche im selben Stil wie „+ Neue Karte“ statt des Android-Standardmenüs: aktuelle Probleme der Box als Hinweise (oder „Alles in Ordnung“), Schalter für Benachrichtigungen, „Status prüfen“, „Neu laden“, „Zertifikat neu bestätigen“ und die App-Version. Hell und dunkel wie die übrige Seite. Braucht Android-App 1.2.0; die App 1.1.0 zeigt weiter ihr eigenes Menü.

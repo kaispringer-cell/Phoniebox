@@ -317,3 +317,50 @@ class Spotify:
                     )
                 )
         return results
+
+    def album(self, uri, max_tracks=200):
+        """An album with its titles for the Spotify tab, so a single song can be played or put
+        on a card. Albums with more than 50 titles (audio plays for children often have many
+        chapters) are fetched page by page up to max_tracks."""
+        uri = normalize_uri(uri)
+        if not uri.startswith('spotify:album:'):
+            raise Problem('Nur Alben haben eine Titelliste.')
+        album_id = uri.split(':')[2]
+        data = self.api('GET', '/albums/' + album_id)
+        images = data.get('images') or []
+        image = images[-1]['url'] if images else ''
+        artist = ', '.join(a.get('name', '') for a in data.get('artists') or [])
+        page = data.get('tracks') or {}
+        items = list(page.get('items') or [])
+        while page.get('next') and len(items) < max_tracks:
+            page = self.api('GET', f'/albums/{album_id}/tracks', params={'offset': len(items), 'limit': 50})
+            if not page.get('items'):
+                break
+            items += page['items']
+        tracks = []
+        for item in items[:max_tracks]:
+            if not item or not item.get('uri'):
+                continue
+            tracks.append(
+                dict(
+                    type='track',
+                    name=item.get('name', ''),
+                    artist=', '.join(a.get('name', '') for a in item.get('artists') or []) or artist,
+                    uri=item['uri'],
+                    url=(item.get('external_urls') or {}).get('spotify', ''),
+                    image=image,
+                    number=item.get('track_number') or len(tracks) + 1,
+                    duration=item.get('duration_ms') or 0,
+                )
+            )
+        return dict(
+            album=dict(
+                type='album',
+                name=data.get('name', ''),
+                artist=artist,
+                uri=uri,
+                url=(data.get('external_urls') or {}).get('spotify', ''),
+                image=image,
+            ),
+            tracks=tracks,
+        )

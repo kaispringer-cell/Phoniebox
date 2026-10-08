@@ -32,6 +32,11 @@ async function player() {
     $('progress').max = p.duration || 1; $('progress').value = p.progress || 0;
     if (Number.isInteger(p.volume) && document.activeElement !== $('volume')) { $('volume').value=p.volume; $('volume-value').textContent=p.volume+' %'; }
     $('spotify-link').href = /^https:\/\/open\.spotify\.com\//.test(p.url || '') ? p.url : 'https://open.spotify.com';
+    $('sp-title').textContent = p.active ? (p.title || 'Ohne Titel') : 'Gerade läuft nichts.';
+    $('sp-artist').textContent = p.active ? [p.artist, p.playing ? 'Wiedergabe läuft' : 'Pausiert'].filter(Boolean).join(' · ') : (p.message || '');
+    $('sp-cover').hidden = !p.cover; $('sp-placeholder').hidden = !!p.cover;
+    if (p.cover) $('sp-cover').src = p.cover; else $('sp-cover').removeAttribute('src');
+    if (Number.isInteger(p.volume) && document.activeElement !== $('sp-volume')) { $('sp-volume').value=p.volume; $('sp-volume-value').textContent=p.volume+' %'; }
   } catch(e) { $('player-message').textContent=e.message; $('playback-status').textContent=e.message; }
   finally { playerBusy = false; }
   refreshTimer = setTimeout(player,20000);
@@ -42,7 +47,7 @@ document.querySelectorAll('[data-action]').forEach(button => button.addEventList
   catch(e) {feedback(e.message);} finally {button.disabled=false;}
 }));
 $('volume').addEventListener('input', () => $('volume-value').textContent=$('volume').value+' %');
-$('volume').addEventListener('change', async () => {try {await api('/api/player/volume',{volume:$('volume').value});} catch(e){feedback(e.message);}});
+$('volume').addEventListener('change', async () => {$('sp-volume').value=$('volume').value; $('sp-volume-value').textContent=$('volume').value+' %'; try {await api('/api/player/volume',{volume:$('volume').value});} catch(e){feedback(e.message);}});
 let clearCardSearch=()=>{};
 function cardFields() {
   const action=$('card-action').value;
@@ -71,8 +76,34 @@ function loadCard(card) {
 $('card-action').addEventListener('change',cardFields);
 cardFields();
 const searchLabels={track:'Titel',album:'Album',playlist:'Playlist'};
-// Spotify search with results to pick from; used by the card form and the "Neue Karte" dialog.
-function spotifySearch(ids, pick) {
+// One search result or album title as a card with action buttons.
+function musicCard(item, buttons) {
+  const article=document.createElement('article'); article.className='card';
+  const blank=()=>{ const span=document.createElement('span'); span.className='thumb'; return span; };
+  if (item.image) {
+    const img=document.createElement('img'); img.src=item.image; img.alt=''; img.className='thumb';
+    img.addEventListener('error',()=>img.replaceWith(blank()));
+    article.appendChild(img);
+  } else article.appendChild(blank());
+  const info=document.createElement('div');
+  const h3=document.createElement('h3'); h3.textContent=(item.number ? item.number+'. ' : '')+item.name; info.appendChild(h3);
+  const p=document.createElement('p'); p.className='uri';
+  p.textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
+  info.appendChild(p);
+  article.appendChild(info);
+  const actions=document.createElement('div'); actions.className='actions';
+  buttons.forEach(({label, quiet, onClick})=>{
+    const button=document.createElement('button'); button.type='button'; button.textContent=label;
+    if (quiet) button.className='quiet';
+    button.addEventListener('click',()=>onClick(item,button));
+    actions.appendChild(button);
+  });
+  article.appendChild(actions);
+  return article;
+}
+// Spotify search with results to pick from; used by the card form, the "Neue Karte" dialog
+// and the Spotify tab. 'buttons' replaces the single "Übernehmen" button.
+function spotifySearch(ids, pick, buttons) {
   let timer, token=0;
   const clear=()=>{ clearTimeout(timer); token++; $(ids.query).value=''; $(ids.status).textContent=''; $(ids.results).hidden=true; $(ids.results).textContent=''; };
   function render(items) {
@@ -80,21 +111,7 @@ function spotifySearch(ids, pick) {
     box.textContent='';
     box.hidden=!items.length;
     $(ids.status).textContent=items.length ? '' : 'Nichts gefunden.';
-    items.forEach(item=>{
-      const article=document.createElement('article'); article.className='card';
-      if (item.image) { const img=document.createElement('img'); img.src=item.image; img.alt=''; img.className='thumb'; article.appendChild(img); }
-      const info=document.createElement('div');
-      const h3=document.createElement('h3'); h3.textContent=item.name; info.appendChild(h3);
-      const p=document.createElement('p'); p.className='uri';
-      p.textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
-      info.appendChild(p);
-      article.appendChild(info);
-      const actions=document.createElement('div'); actions.className='actions';
-      const button=document.createElement('button'); button.type='button'; button.textContent='Übernehmen';
-      button.addEventListener('click',()=>pick(item));
-      actions.appendChild(button); article.appendChild(actions);
-      box.appendChild(article);
-    });
+    items.forEach(item=>box.appendChild(musicCard(item, buttons ? buttons(item) : [{label:'Übernehmen', onClick:pick}])));
   }
   function run(delay) {
     clearTimeout(timer);
@@ -124,31 +141,35 @@ $('learn').addEventListener('click',async () => {try {await api('/api/learn',{})
 $('cancel-learn').addEventListener('click',async () => {try {await api('/api/learn/cancel',{}); $('learn-status').textContent='Anlernen beendet.';}catch(e){feedback(e.message);}});
 // "Neue Karte": wait for a card in silent learn mode, then search Spotify and save the card.
 // The M301 reader cannot write to cards, so the card's ID is linked to the chosen music.
-const newCard={uid:'', waiting:false, timer:null};
+const newCard={uid:'', waiting:false, timer:null, preset:null};
 function newCardStep(step) {
   ['scan','search','save'].forEach(name=>{
     $('nc-'+name).hidden=name!==step;
     if (name===step) $('nc-mark-'+name).setAttribute('aria-current','step'); else $('nc-mark-'+name).removeAttribute('aria-current');
   });
+  $('nc-uid').hidden=step==='scan';
+}
+function newCardPick(item) {
+  $('nc-form-uri').value=item.uri;
+  $('nc-name').value=item.name;
+  $('nc-pick-name').textContent=item.name;
+  $('nc-pick-info').textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
+  $('nc-thumb').hidden=!item.image;
+  if (item.image) $('nc-thumb').src=item.image; else $('nc-thumb').removeAttribute('src');
+  newCardStep('save');
+  $('nc-name').focus();
 }
 const clearNewCardSearch=spotifySearch(
   {query:'nc-query',type:'nc-type',status:'nc-search-status',results:'nc-results'},
-  item=>{
-    $('nc-form-uri').value=item.uri;
-    $('nc-name').value=item.name;
-    $('nc-pick-name').textContent=item.name;
-    $('nc-pick-info').textContent=(searchLabels[item.type]||item.type)+(item.artist ? ' · '+item.artist : '');
-    $('nc-thumb').hidden=!item.image;
-    if (item.image) $('nc-thumb').src=item.image; else $('nc-thumb').removeAttribute('src');
-    newCardStep('save');
-    $('nc-name').focus();
-  }
+  newCardPick
 );
 async function newCardWait() {
   clearTimeout(newCard.timer);
   newCard.uid=''; newCard.waiting=true;
   $('nc-retry').hidden=true;
-  $('nc-scan-status').textContent='Bitte jetzt die neue NFC-Karte auf die Phoniebox legen.';
+  $('nc-scan-status').textContent=newCard.preset
+    ? 'Bitte jetzt die NFC-Karte für „'+newCard.preset.name+'“ auf die Phoniebox legen.'
+    : 'Bitte jetzt die neue NFC-Karte auf die Phoniebox legen.';
   newCardStep('scan');
   try { await api('/api/learn',{}); }
   catch(e) { newCard.waiting=false; $('nc-scan-status').textContent=e.message; $('nc-retry').hidden=false; return; }
@@ -164,8 +185,9 @@ async function newCardWait() {
         $('nc-form-uid').value=h.learned;
         $('nc-uid').textContent=h.card
           ? 'Karte '+h.learned+' erkannt. Sie startet bisher „'+h.card.name+'“; die neue Auswahl ersetzt das.'
-          : 'Karte '+h.learned+' erkannt. Jetzt die Musik für diese Karte suchen.';
+          : 'Karte '+h.learned+' erkannt.'+(newCard.preset ? '' : ' Jetzt die Musik für diese Karte suchen.');
         clearNewCardSearch();
+        if (newCard.preset) { newCardPick(newCard.preset); return; }
         newCardStep('search');
         $('nc-query').focus();
         return;
@@ -181,14 +203,17 @@ async function newCardWait() {
   };
   poll();
 }
-$('new-card-open').addEventListener('click',()=>{
+// preset: music chosen in the Spotify tab; the dialog then only asks for the card.
+function openNewCard(preset) {
+  newCard.preset=preset || null;
   $('nc-form-uid').value=''; $('nc-form-uri').value=''; $('nc-name').value='';
   clearNewCardSearch();
   $('new-card').showModal();
   newCardWait();
-});
+}
+$('new-card-open').addEventListener('click',()=>openNewCard(null));
 $('nc-retry').addEventListener('click',newCardWait);
-$('nc-back').addEventListener('click',()=>{ newCardStep('search'); $('nc-query').focus(); });
+$('nc-back').addEventListener('click',()=>{ newCard.preset=null; newCardStep('search'); $('nc-query').focus(); });
 $('new-card-close').addEventListener('click',()=>$('new-card').close());
 $('new-card').addEventListener('close',()=>{
   clearTimeout(newCard.timer);
@@ -378,6 +403,52 @@ $('bt-scan').addEventListener('click', async () => {
 loadBluetooth();
 
 $('cover').addEventListener('error', () => { $('cover').hidden = true; $('placeholder').hidden = false; });
+$('sp-cover').addEventListener('error', () => { $('sp-cover').hidden = true; $('sp-placeholder').hidden = false; });
+
+// Spotify tab: search an album, title or playlist, play it or put it on an NFC card.
+async function spotifyPlay(item, button) {
+  button.disabled=true;
+  $('sp-message').textContent='„'+item.name+'“ wird gestartet …';
+  try { await api('/api/player/play',{uri:item.uri}); $('sp-message').textContent='„'+item.name+'“ gestartet.'; setTimeout(player,1200); setTimeout(player,4000); }
+  catch(e) { $('sp-message').textContent=e.message; }
+  finally { button.disabled=false; }
+}
+const spotifyButtons=item=>[
+  {label:'Abspielen', onClick:spotifyPlay},
+  ...(item.type==='album' ? [{label:'Titel', quiet:true, onClick:showAlbum}] : []),
+  {label:'Mit NFC verbinden', quiet:true, onClick:openNewCard},
+];
+spotifySearch({query:'sp-query',type:'sp-type',status:'sp-search-status',results:'sp-results'}, null, spotifyButtons);
+let albumToken=0;
+function closeAlbum() {
+  albumToken++;
+  $('sp-album').hidden=true;
+  $('sp-results').hidden=!$('sp-results').children.length;
+  $('sp-query').focus();
+}
+async function showAlbum(item) {
+  const current=++albumToken;
+  $('sp-results').hidden=true;
+  $('sp-album').hidden=false;
+  $('sp-album-head').replaceChildren(musicCard(item, spotifyButtons(item).filter(b=>b.label!=='Titel')));
+  $('sp-tracks').textContent='';
+  $('sp-album-status').textContent='Titel werden geladen …';
+  $('sp-album').scrollIntoView({block:'start'});
+  try {
+    const r=await api('/api/spotify/album?uri='+encodeURIComponent(item.uri));
+    if (current!==albumToken) return;
+    $('sp-album-status').textContent=r.tracks.length ? r.tracks.length+' Titel' : 'Keine Titel gefunden.';
+    r.tracks.forEach(track=>$('sp-tracks').appendChild(musicCard(track, spotifyButtons(track))));
+  } catch(e) { if (current===albumToken) $('sp-album-status').textContent=e.message; }
+}
+$('sp-album-back').addEventListener('click',closeAlbum);
+$('sp-query').addEventListener('input',()=>{ if (!$('sp-album').hidden) { albumToken++; $('sp-album').hidden=true; } });
+$('sp-type').addEventListener('change',()=>{ if (!$('sp-album').hidden) { albumToken++; $('sp-album').hidden=true; } });
+$('sp-volume').addEventListener('input', () => $('sp-volume-value').textContent=$('sp-volume').value+' %');
+$('sp-volume').addEventListener('change', async () => {
+  $('volume').value=$('sp-volume').value; $('volume-value').textContent=$('sp-volume').value+' %';
+  try {await api('/api/player/volume',{volume:$('sp-volume').value});} catch(e){$('sp-message').textContent=e.message;}
+});
 $('reboot-pi').addEventListener('click', async () => {
   if (!window.confirm('Phoniebox wirklich neu starten? Laufende Musik wird beendet.')) return;
   const button = $('reboot-pi'); button.disabled = true;
