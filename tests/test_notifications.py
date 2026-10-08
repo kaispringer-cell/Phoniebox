@@ -126,5 +126,14 @@ def test_player_switch_only_for_apps_that_have_it():
     with TemporaryDirectory() as d:
         html = create_app(Path(d)).test_client().get('/', base_url='https://phoniebox.local').text
         assert '<div id="app-player-row" hidden>' in html and 'id="app-player"' in html
+        assert '<div id="app-blocked" class="notice error" hidden>' in html
     script = (Path(__file__).parent.parent / 'static' / 'interface.js').read_text()
     assert "typeof app.playerEnabled === 'function'" in script and 'app.setPlayer(player.checked)' in script
+    assert "typeof app.notificationsAllowed === 'function'" in script and 'app.openNotificationSettings()' in script
+
+
+def test_release_manifest_matches_version():
+    # The release workflow refuses to build when these two differ.
+    import json
+    root = Path(__file__).parent.parent
+    assert json.loads((root / 'release.json').read_text())['version'] == (root / 'VERSION').read_text().strip()

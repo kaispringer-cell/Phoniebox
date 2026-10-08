@@ -1,3 +1,8 @@
+# 1.3.1
+
+- „Das Android-Benachrichtigungssystem meldet keine Abfrage, ob Benachrichtigungen angezeigt werden dürfen. Es erscheint auch kein Icon.“ – Android fragt nur einmal nach der Erlaubnis; wurde sie früher abgelehnt oder in den Einstellungen ausgeschaltet, fragt es nie wieder. Die App merkt das jetzt beim Start und bietet an, die Benachrichtigungseinstellungen zu öffnen. Im Menü (☰) gibt es dafür den Eintrag „Benachrichtigungen in Android erlauben“, im Menü der Weboberfläche (ab App 1.22.0 auf dem Pi) einen Hinweis mit Button.
+- Der Player nutzt einen neuen Kanal mit normaler Wichtigkeit (ohne Ton und Vibration), damit das Phoniebox-Icon oben in der Statusleiste erscheint. Mit niedriger Wichtigkeit zeigen viele Handys dort keins.
+
 # 1.3.0
 
 - „Ein Phoniebox Icon für den Tray unter Android. Dort klassische Musikplayer-Steuerung mit Albumcover und die Möglichkeit die App zu öffnen.“ – Die App zeigt in der Benachrichtigungsleiste (und ab Android 13 in den Mediensteuerungen der Schnelleinstellungen und auf dem Sperrbildschirm) einen Player: Albumcover, Titel, Interpret, Fortschritt und Zurück, Start/Pause, Weiter. Antippen öffnet die App. Braucht App 1.22.0 auf dem Pi.

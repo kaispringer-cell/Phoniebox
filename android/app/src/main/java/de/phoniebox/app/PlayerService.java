@@ -43,7 +43,7 @@ import javax.net.ssl.HttpsURLConnection;
  * beim nächsten Öffnen der App startet er wieder.
  */
 public class PlayerService extends Service {
-    static final String CHANNEL = "player";
+    static final String CHANNEL = "playback";
     private static final int ID = 2;
     private static final String ACTION = "action";
     private static final String STOP = "stop";
@@ -104,11 +104,17 @@ public class PlayerService extends Service {
     }
 
     static void createChannel(Context context) {
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        // 1.3.0 hatte "player" mit niedriger Wichtigkeit: Viele Handys zeigen dafür kein Icon
+        // in der Statusleiste. Die Wichtigkeit eines Kanals lässt sich nicht mehr ändern.
+        manager.deleteNotificationChannel("player");
         NotificationChannel channel = new NotificationChannel(
-                CHANNEL, "Player", NotificationManager.IMPORTANCE_LOW);
+                CHANNEL, "Player", NotificationManager.IMPORTANCE_DEFAULT);
         channel.setDescription("Was auf der Phoniebox läuft, mit Zurück, Start/Pause und Weiter");
+        channel.setSound(null, null);
+        channel.enableVibration(false);
         channel.setShowBadge(false);
-        context.getSystemService(NotificationManager.class).createNotificationChannel(channel);
+        manager.createNotificationChannel(channel);
     }
 
     @Override

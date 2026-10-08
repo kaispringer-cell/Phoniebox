@@ -3,6 +3,7 @@ package de.phoniebox.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -13,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,6 +54,9 @@ public class MainActivity extends Activity {
     private TextView errorText;
     private boolean failed;
     private AlertDialog certificateDialog;
+    /** Die Android-Abfrage und der Hinweis auf die Einstellungen kommen höchstens einmal pro Start. */
+    private boolean permissionRequested;
+    private boolean settingsOffered;
 
     private final Runnable poll = new Runnable() {
         @Override
@@ -143,12 +148,14 @@ public class MainActivity extends Activity {
     private void showMenu() {
         boolean enabled = Box.notificationsEnabled(this);
         boolean player = Box.playerEnabled(this);
+        boolean allowed = notificationsAllowed();
         String[] items = {
                 "Status jetzt prüfen",
                 enabled ? "Benachrichtigungen ausschalten" : "Benachrichtigungen einschalten",
                 player ? "Player in der Leiste ausblenden" : "Player in der Leiste zeigen",
                 "Neu laden",
                 "Zertifikat neu bestätigen",
+                allowed ? "Benachrichtigungseinstellungen" : "Benachrichtigungen in Android erlauben (aus)",
         };
         new AlertDialog.Builder(this)
                 .setTitle("Phoniebox-App " + appVersion())
@@ -166,8 +173,11 @@ public class MainActivity extends Activity {
                         case 3:
                             reload();
                             break;
-                        default:
+                        case 4:
                             resetCertificate();
+                            break;
+                        default:
+                            openNotificationSettings();
                     }
                 })
                 .show();
@@ -262,6 +272,21 @@ public class MainActivity extends Activity {
             });
         }
 
+        /** false, wenn Android die Benachrichtigungen der App blockiert. */
+        @JavascriptInterface
+        public boolean notificationsAllowed() {
+            return MainActivity.this.notificationsAllowed();
+        }
+
+        @JavascriptInterface
+        public void openNotificationSettings() {
+            runOnUiThread(() -> {
+                if (fromBox()) {
+                    MainActivity.this.openNotificationSettings();
+                }
+            });
+        }
+
         @JavascriptInterface
         public void checkNow() {
             runOnUiThread(() -> {
@@ -312,10 +337,61 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean notificationsAllowed() {
+        return getSystemService(NotificationManager.class).areNotificationsEnabled();
+    }
+
+    /**
+     * Holt die Erlaubnis für Benachrichtigungen. Ab Android 13 fragt das System einmal; hat man
+     * dort abgelehnt (oder sie in den Einstellungen ausgeschaltet), fragt es nie wieder. Dann
+     * bietet die App an, die Einstellungen zu öffnen, höchstens einmal pro Start.
+     */
     private void askForNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33
+        if (notificationsAllowed()) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 33 && !permissionRequested
                 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            permissionRequested = true;
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
+        } else if (!settingsOffered) {
+            offerNotificationSettings();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (notificationsAllowed()) {
+            PlayerService.start(this);
+            check(false);
+        } else if (Build.VERSION.SDK_INT >= 33
+                && !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+                && !settingsOffered) {
+            // Android hat gar nicht mehr gefragt (früher abgelehnt): Weg über die Einstellungen.
+            offerNotificationSettings();
+        }
+    }
+
+    private void offerNotificationSettings() {
+        settingsOffered = true;
+        new AlertDialog.Builder(this)
+                .setTitle("Benachrichtigungen sind aus")
+                .setMessage("Android zeigt für die Phoniebox-App keine Benachrichtigungen. Ohne sie "
+                        + "erscheinen weder der Player in der Leiste noch Hinweise auf Probleme der Box.\n\n"
+                        + "In den Einstellungen „Benachrichtigungen“ für Phoniebox erlauben.")
+                .setPositiveButton("Einstellungen öffnen", (d, w) -> openNotificationSettings())
+                .setNegativeButton("Später", null)
+                .show();
+    }
+
+    private void openNotificationSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
+        } catch (ActivityNotFoundException e) {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", getPackageName(), null)));
         }
     }
 
