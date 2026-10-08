@@ -1,3 +1,8 @@
+# 1.3.3
+
+- „In Version 1.3.2 gibt es keine Playerdiagnose. Es klappt immer noch nicht.“ – Das Menü ☰ öffnet die Weboberfläche, und die zeigt die Diagnose erst ab App 1.23.1 auf dem Pi. Die App meldet sich jetzt selbst: Ist der Player 4 Sekunden nach dem Öffnen nicht zu sehen, erscheint einmal pro Start der Dialog „Player startet nicht“ mit dem Befund (Android-Version, Gerät, Berechtigung, Kanal, Dienst, ob Android die Benachrichtigung führt, letztes Ereignis).
+- Zusätzlich gibt es die Verknüpfung **Player-Diagnose**: lange auf das App-Symbol drücken.
+
 # 1.3.2
 
 - „Das App-Icon mit der Playersteuerung erscheint immer noch nicht.“ – Neue **Player-Diagnose** im Menü (☰) und in der Seitenleiste (ab App 1.23.1 auf dem Pi): startet den Player und zeigt Android-Version, ob Benachrichtigungen erlaubt sind, den Zustand des Player-Kanals, ob der Dienst läuft und was zuletzt passiert ist, etwa „Start von Android abgelehnt: …“. Bisher schluckte die App solche Fehler stumm.
