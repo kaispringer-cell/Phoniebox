@@ -35,12 +35,14 @@ Die Wiedergabe arbeitet zweigleisig:
 | `alarm_radio.py` | `AlarmRadio`: mpv-Wiedergabe, Senderliste, Töne, Wecker. `alarm_config`, `due`, `make_tone` |
 | `configure_audio.py` | Einmalige Erkennung des analogen Ausgangs beim ersten Dienststart. Erlaubte Ausgangsnamen (`ALSA_LOCAL`, `ALSA_BLUETOOTH`), `analog_device()` und `device_reachable()` (prüft vor dem librespot-Start, ob sich ein ALSA-Gerät tatsächlich öffnen lässt) |
 | `bluetooth.py` | Dünner `bluetoothctl`-Wrapper für den Bereich „Bluetooth“ in der Weboberfläche: `scan()`, `pair()`, `connect()`, `disconnect()`, `forget()`, `paired_devices()`, `info()`. Keine D-Bus-Bibliothek, jeder Aufruf ist ein eigener, non-interaktiver `bluetoothctl`-Unterprozess; Scan wird über `bluetoothctl --timeout` begrenzt (das Kommando kehrt sonst nie von selbst zurück) |
+| `notifications.py` | `Notices`: aktuelle Probleme (Bluetooth, Audioausgang, Player, NFC-Reader, Spotify) für `GET /api/notifications`, das die Android-App abfragt. Meldet ein Problem erst nach 30 Sekunden (`GRACE`) und liest nur vorhandenen Zustand (`Reconnector.connected`, `player_status`, `reader_status`) |
 | `update.py` | Updater (läuft auf dem Pi als root, wird vom Desktop-Installer mitgeliefert und steht nicht in `release.json`), siehe unten |
 | `install.sh`, `build_librespot.sh`, `resume.sh`, `diagnose.sh` | Erstinstallation, librespot-Build, Abschluss nach Portkonflikt, Diagnose |
 | `deploy/` | `phoniebox.service`, `phoniebox-reboot.path`/`.service` (Neustart-Helfer), `bluealsa-override.conf` (`--keep-alive=5`), `nginx.conf`, udev-Regel `99-phoniebox-nfc.rules` |
 | `templates/`, `static/` | Eine Seite (`index.html` auf `base.html`), `app.js` (Polling und Formulare), `style.css` |
 | `release.json`, `VERSION` | Manifest und Version des Update-Pakets |
-| `tests/` | pytest-Tests (56) |
+| `tests/` | pytest-Tests (70) |
+| `android/` | Android-App (WebView auf `https://phoniebox.local` plus Benachrichtigungen), nicht Teil des App-Pakets. Siehe `android/README.md` |
 
 ## Threads und Laufzeitverhalten
 

@@ -1,3 +1,10 @@
+# 1.20.0
+
+- „Dann bauen wir jetzt eine Android-App aus der Webseite. Feature soll mit eingebaut werden: Benachrichtigungen. z.B. Bluetooth nicht verbunden.“ – Neue Android-App im Ordner `android/` (eigene Version, siehe `android/CHANGELOG.md`). Auf dem Pi dafür:
+- Neuer Endpunkt `GET /api/notifications` (`notifications.py`): listet aktuelle Probleme mit fester ID, Titel, Text und Zeitpunkt: `bluetooth` (gespeicherter Lautsprecher nicht verbunden oder nicht dauerhaft gekoppelt), `audio` (Audioausgang nicht erreichbar), `player` (librespot startet nicht), `reader` (NFC-Reader nicht bereit), `spotify` (Spotify nicht verbunden). Ein Problem erscheint erst, wenn es 30 Sekunden anhält, damit ein kurzer Aussetzer, den die automatische Wiederverbindung behebt, kein Handy anpiept.
+- Der Endpunkt liest nur, was die Hintergrund-Threads ohnehin wissen, und ruft weder `bluetoothctl` noch Spotify auf. Dafür merkt sich die automatische Bluetooth-Wiederverbindung den Verbindungszustand des gespeicherten Lautsprechers. Nach bewusstem „Trennen“ meldet sie nichts.
+- 6 neue Tests. Installer 2.8.18 weiterverwenden. Noch nicht auf echter Hardware geprüft.
+
 # 1.19.0
 
 - „Ein Button für neue NFC-Karten: Der Benutzer wird gebeten, eine neue NFC-Karte aufzulegen. Dann bei Spotify suchen und auswählen.“ – Unter NFC-Karten öffnet **+ Neue Karte** einen Dialog in drei Schritten: Karte auflegen (stiller Anlernmodus, Musik startet nicht), Spotify durchsuchen (Alles, Album, Playlist oder Titel) und ein Ergebnis wählen, Name prüfen und speichern. Ist die Karte schon belegt, nennt der Dialog die bisherige Musik. Wird in 60 Sekunden keine Karte erkannt, zeigt er den Reader-Status und „Erneut warten“.

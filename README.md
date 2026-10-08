@@ -2,7 +2,7 @@
 
 Musikbox für den Raspberry Pi: NFC-Karten starten Spotify-Inhalte, eine Weboberfläche verwaltet Karten, Radio, Wecker und Einstellungen. Die Ausgabe läuft über den analogen 3,5-mm-Klinkenanschluss.
 
-- Version: siehe `VERSION` (aktuell 1.19.0)
+- Version: siehe `VERSION` (aktuell 1.20.0)
 - Änderungen: [CHANGELOG.md](CHANGELOG.md)
 - Technischer Aufbau, Datenmodell, Update-Paket: [docs/ARCHITEKTUR.md](docs/ARCHITEKTUR.md)
 
@@ -14,6 +14,7 @@ Musikbox für den Raspberry Pi: NFC-Karten starten Spotify-Inhalte, eine Webober
 - **Wecker**: beliebig viele wöchentlich konfigurierbare Wecker mit Ton, Radio oder Spotify-Inhalt, Zeitzone Europe/Berlin. Der Ausgang ist wählbar: Klinke (Standard) oder Bluetooth mit automatischem Wechsel auf die Klinke.
 - **Bluetooth**: Lautsprecher direkt in der Weboberfläche suchen, koppeln, verbinden und als Audioausgang übernehmen – ohne SSH.
 - **Weboberfläche**: `https://phoniebox.local`, ohne Anmeldung.
+- **Android-App** (`android/`): die Weboberfläche als App, mit Benachrichtigungen bei Problemen der Box, etwa „Bluetooth nicht verbunden“. Siehe [android/README.md](android/README.md).
 - **Updates** mit automatischer Sicherung und Rücksetzung bei fehlgeschlagenem Start.
 
 ## Voraussetzungen
@@ -147,7 +148,7 @@ sudo bash diagnose.sh                     # nur lesend, gibt keine Zugangsdaten 
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 pip install -r requirements.txt
-python3 -m pytest -q tests          # 56 Tests
+python3 -m pytest -q tests          # 70 Tests
 ```
 
 Ohne Pi lässt sich die Weboberfläche lokal starten:
@@ -165,6 +166,10 @@ Wer Dateien hinzufügt oder ändert, die per Update ausgeliefert werden, muss `V
 ### Release veröffentlichen
 
 Releases entstehen automatisch. Steht in `VERSION` auf `main` eine Version, für die es noch kein Release gibt, lässt die Action `.github/workflows/release.yml` die Tests laufen, baut mit `scripts/build-package.sh` das Paket `phoniebox-X.Y.Z.tar.gz` (alle Dateien unter `phoniebox/`, wie der Updater es verlangt) samt `.sha256` und legt das Release `vX.Y.Z` mit dem passenden CHANGELOG-Abschnitt an. Für eine neue Version genügt es also, `VERSION`, `release.json` und `CHANGELOG.md` zu erhöhen und auf `main` zu mergen. Passen `VERSION` und `release.json` nicht zusammen oder fehlt der CHANGELOG-Abschnitt, bricht die Action ab. Ein von Hand gepushter Tag `vX.Y.Z` funktioniert ebenso. Die automatischen Quellarchive von GitHub sind keine gültigen App-Pakete, weil ihr Ordner anders heißt.
+
+### Android-App
+
+Die APK baut die Action `.github/workflows/android.yml` bei jedem Pull Request mit Änderungen unter `android/` (als Artefakt am Workflow-Lauf) und legt auf `main` ein Release `android-vX.Y.Z` an, sobald es für die Version in `android/VERSION` noch keins gibt. Dieses Release wird nie als „latest“ markiert, damit der Desktop-Installer weiter das App-Paket findet. Das Verzeichnis `android/` gehört nicht zum App-Paket für den Pi.
 
 ## Bekannte Einschränkungen
 

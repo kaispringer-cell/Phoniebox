@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Version der Android-App, unabhängig von der Pi-App. Neue Version = neues Release android-vX.Y.Z.
+def appVersion = file('../VERSION').text.trim()
+
+android {
+    namespace 'de.phoniebox.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'de.phoniebox.app'
+        minSdk 29
+        targetSdk 35
+        versionName appVersion
+        // 1.2.3 -> 10203
+        versionCode appVersion.tokenize('.').collect { it as int }.inject(0) { sum, part -> sum * 100 + part }
+    }
+
+    signingConfigs {
+        // Fester Debug-Schlüssel im Repo: Jede gebaute APK lässt sich über die vorige installieren.
+        debug {
+            storeFile file('../debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

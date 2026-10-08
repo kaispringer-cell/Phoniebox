@@ -15,6 +15,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from storage import Store
 from spotify import Spotify, Problem, REDIRECT, normalize_uri
 from hardware import Hardware
+from notifications import Notices
 from alarm_radio import (
     ALARM_FORM_FIELDS,
     ALARM_ID,
@@ -52,6 +53,8 @@ def create_app(directory=None, start_hardware=False):
     media = AlarmRadio(store, hw)
     hw.media = media
     app.extensions['media'] = media
+    notices = Notices(store, hw)
+    app.extensions['notices'] = notices
     oauth = {}
     auth_lock = threading.Lock()
     bt_lock = hw.bluetooth.lock
@@ -439,6 +442,15 @@ def create_app(directory=None, start_hardware=False):
     def cancel():
         hw.cancel()
         return jsonify(ok=True)
+
+    @app.get('/api/notifications')
+    def notifications():
+        # Polled by the Android app. Only GET, so no CSRF token is needed.
+        return jsonify(
+            version=(Path(__file__).parent / 'VERSION').read_text().strip(),
+            name=store.get('name'),
+            notifications=notices.current(),
+        )
 
     @app.get('/api/hardware')
     def hardware():

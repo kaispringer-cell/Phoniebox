@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "version": "1.19.0",
+  "version": "1.20.0",
   "database_schema": 1,
   "packages": [
     "python3-flask",
@@ -24,6 +24,7 @@
     "librespot_event.py",
     "configure_audio.py",
     "bluetooth.py",
+    "notifications.py",
     "VERSION",
     "templates/base.html",
     "templates/index.html",
