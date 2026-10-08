@@ -255,6 +255,9 @@ class Reconnector:
         self.lock = threading.RLock()
         self.suspended = set()
         self.message = ''
+        # Last known state of the saved speaker for /api/notifications: True connected,
+        # False not connected, None unknown, not a Bluetooth output or deliberately disconnected.
+        self.connected = None
 
     def resume(self, mac):
         self.suspended.discard(mac.upper())
@@ -262,6 +265,7 @@ class Reconnector:
 
     def suspend(self, mac):
         self.suspended.add(mac.upper())
+        self.connected = None
         self.message = 'Automatische Verbindung nach bewusstem Trennen pausiert. Zum Fortsetzen „Verbinden“ wählen.'
 
     def tick(self):
@@ -271,30 +275,37 @@ class Reconnector:
             mac = mac_in(self.store.get('audio'))
             if not mac:
                 self.message = ''
+                self.connected = None
                 return
             if mac in self.suspended or self.stop.is_set():
+                self.connected = None
                 return
             adapter = adapter_status()
             if adapter['state'] == 'off':
                 power_on()
             if adapter['state'] not in ('ready', 'off'):
                 self.message = 'Bluetooth noch nicht bereit. Verbindung wird automatisch erneut versucht.'
+                self.connected = None if adapter['state'] == 'starting' else False
                 return
             device = info(mac)
             if not device or not device.get('bonded'):
                 self.message = 'Gespeicherter Lautsprecher ist nicht dauerhaft gekoppelt. Unter Bluetooth „Dauerhaft koppeln“ wählen.'
+                self.connected = False
                 return
             if device['connected']:
                 self.message = 'Gespeicherter Lautsprecher verbunden.'
+                self.connected = True
                 return
             if not device['trusted']:
                 _run(['trust', mac], timeout=10)
             self.message = 'Gespeicherter Lautsprecher wird verbunden …'
             if connect(mac):
                 self.message = 'Gespeicherter Lautsprecher wieder verbunden.'
+                self.connected = True
                 self.restart.set()
             else:
                 self.message = 'Lautsprecher noch nicht erreichbar. Automatischer Verbindungsversuch folgt; erneutes Koppeln ist nicht nötig.'
+                self.connected = False
         finally:
             self.lock.release()
 
@@ -305,4 +316,5 @@ class Reconnector:
             except Exception:
                 # Keep recovery alive if BlueZ temporarily disappears during boot.
                 self.message = 'Bluetooth-Verbindung vorübergehend nicht möglich. Wird erneut versucht.'
+                self.connected = False
             self.stop.wait(10)
