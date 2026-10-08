@@ -158,9 +158,7 @@ public class MainActivity extends Activity {
                             reload();
                             break;
                         default:
-                            Box.clearPin(this);
-                            web.clearSslPreferences();
-                            reload();
+                            resetCertificate();
                     }
                 })
                 .show();
@@ -172,6 +170,12 @@ public class MainActivity extends Activity {
         } catch (PackageManager.NameNotFoundException e) {
             return "";
         }
+    }
+
+    private void resetCertificate() {
+        Box.clearPin(this);
+        web.clearSslPreferences();
+        reload();
     }
 
     private void setNotifications(boolean enable) {
@@ -199,8 +203,48 @@ public class MainActivity extends Activity {
         window.getDecorView().setSystemUiVisibility(dark ? flags & ~light : flags | light);
     }
 
-    /** Nur für Seiten der Box: der Button ☰ und das Farbschema der Weboberfläche. */
+    /**
+     * Nur für Seiten der Box: der Button ☰, das Menü in der Weboberfläche (ab 1.20.2 auf dem Pi)
+     * und das Farbschema. Die Methoden laufen nicht im UI-Thread.
+     */
     private final class Bridge {
+        @JavascriptInterface
+        public String version() {
+            return appVersion();
+        }
+
+        @JavascriptInterface
+        public boolean notificationsEnabled() {
+            return Box.notificationsEnabled(MainActivity.this);
+        }
+
+        @JavascriptInterface
+        public void setNotifications(boolean enable) {
+            runOnUiThread(() -> {
+                if (fromBox() && enable != Box.notificationsEnabled(MainActivity.this)) {
+                    MainActivity.this.setNotifications(enable);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void checkNow() {
+            runOnUiThread(() -> {
+                if (fromBox()) {
+                    check(false);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void resetCertificate() {
+            runOnUiThread(() -> {
+                if (fromBox()) {
+                    MainActivity.this.resetCertificate();
+                }
+            });
+        }
+
         @JavascriptInterface
         public void openMenu() {
             runOnUiThread(() -> {

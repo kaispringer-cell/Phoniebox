@@ -28,14 +28,15 @@ a.button{display:inline-flex;align-items:center;font-size:14px;font-weight:700;b
 @media(min-width:721px){.alarm-list .actions{flex-wrap:nowrap;flex:none}.alarm-list .card>div:first-child{flex:1}}
 
 /* "Neue Karte" dialog */
-dialog#new-card{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:28px;border:1px solid var(--line);border-radius:22px;background:var(--panel);color:var(--text)}
-dialog#new-card::backdrop{background:#0b1716b3}
-#new-card .section-title{align-items:flex-start}#new-card-close{min-width:44px;padding:8px}
+dialog#new-card,dialog#app-dialog{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;padding:28px;border:1px solid var(--line);border-radius:22px;background:var(--panel);color:var(--text)}
+dialog#new-card::backdrop,dialog#app-dialog::backdrop{background:#0b1716b3}
+#new-card .section-title,#app-dialog .section-title{align-items:flex-start}#new-card-close,#app-dialog-close{min-width:44px;padding:8px}
 .steps{display:flex;gap:8px;list-style:none;padding:0;margin:8px 0 20px;counter-reset:step}.steps li{flex:1;counter-increment:step;font-size:12px;font-weight:700;color:var(--muted);border-top:3px solid var(--line);padding-top:8px}.steps li::before{content:counter(step) '. '}.steps li[aria-current=step]{color:var(--accent);border-top-color:var(--accent)}
 #nc-scan{text-align:center;padding:24px 0}#nc-scan .sound-mark i{background:var(--accent)}
 .sound-mark.waiting i{animation:nc-wait 1.2s ease-in-out infinite alternate}.sound-mark.waiting i:nth-child(2){animation-delay:.2s}.sound-mark.waiting i:nth-child(3){animation-delay:.4s}.sound-mark.waiting i:nth-child(4){animation-delay:.6s}.sound-mark.waiting i:nth-child(5){animation-delay:.8s}
 @keyframes nc-wait{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
 #nc-results{max-height:50vh;overflow:auto}#nc-save .card{justify-content:flex-start;padding:12px 0}
-@media(max-width:720px){dialog#new-card{padding:20px}#new-card .section-title{flex-direction:row}#nc-save .card{flex-direction:row;align-items:center}}
+@media(max-width:720px){dialog#new-card,dialog#app-dialog{padding:20px}#new-card .section-title,#app-dialog .section-title{flex-direction:row}#nc-save .card{flex-direction:row;align-items:center}}
 @media(prefers-reduced-motion:reduce){.sound-mark.waiting i{animation:none}}
 #app-menu{font-size:18px;min-height:40px;min-width:44px;padding:6px 12px;line-height:1}
+#app-status .notice{margin:10px 0}#app-status .notice strong{display:block}.app-switch{display:flex;align-items:center;padding:14px 0;margin:8px 0 0;border-top:1px solid var(--line);font-size:15px}#app-dialog .actions{margin:16px 0 8px}

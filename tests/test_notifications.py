@@ -107,5 +107,6 @@ def test_app_menu_button_is_hidden_outside_the_app():
         html = create_app(Path(d)).test_client().get('/', base_url='https://phoniebox.local').text
         assert html.count('id="app-menu"') == 1
         assert '<button id="app-menu" class="quiet" type="button" hidden' in html
+        assert html.count('<dialog id="app-dialog"') == 1 and 'id="app-notify"' in html
     script = (Path(__file__).parent.parent / 'static' / 'interface.js').read_text()
     assert 'window.PhonieboxApp' in script and 'app.openMenu()' in script

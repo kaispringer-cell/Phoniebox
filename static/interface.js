@@ -23,9 +23,51 @@
   });
   media.addEventListener('change', applyTheme);
   const appButton = document.getElementById('app-menu');
+  const appDialog = document.getElementById('app-dialog');
   if (app && appButton) {
     appButton.hidden = false;
-    appButton.addEventListener('click', () => app.openMenu());
+    // Ältere Apps (1.1.0) kennen nur ihr eigenes Menü.
+    if (!appDialog || typeof app.version !== 'function') {
+      appButton.addEventListener('click', () => app.openMenu());
+    } else {
+      const status = document.getElementById('app-status');
+      const notify = document.getElementById('app-notify');
+      const note = (cls, title, text) => {
+        const p = document.createElement('p');
+        p.className = cls;
+        const strong = document.createElement('strong');
+        strong.textContent = title;
+        p.append(strong, text);
+        return p;
+      };
+      const loadStatus = async () => {
+        status.replaceChildren(note('hint', '', 'Status wird geladen …'));
+        try {
+          const response = await fetch('/api/notifications', {headers: {Accept: 'application/json'}});
+          if (!response.ok) throw new Error('HTTP ' + response.status);
+          const list = (await response.json()).notifications || [];
+          status.replaceChildren(...(list.length
+            ? list.map(n => note('notice error', n.title, n.text))
+            : [note('notice', 'Alles in Ordnung', 'Die Box meldet gerade keine Probleme.')]));
+          app.checkNow();
+        } catch (error) {
+          status.replaceChildren(note('notice error', 'Status nicht abrufbar', error.message));
+        }
+      };
+      appButton.addEventListener('click', () => {
+        notify.checked = app.notificationsEnabled();
+        document.getElementById('app-version').textContent = 'Phoniebox-App ' + app.version();
+        appDialog.showModal();
+        loadStatus();
+      });
+      document.getElementById('app-dialog-close').addEventListener('click', () => appDialog.close());
+      document.getElementById('app-check').addEventListener('click', loadStatus);
+      notify.addEventListener('change', () => app.setNotifications(notify.checked));
+      document.getElementById('app-reload').addEventListener('click', () => location.reload());
+      document.getElementById('app-cert').addEventListener('click', () => {
+        if (confirm('Zertifikat der Box neu bestätigen? Das ist nur nach einer Neuinstallation der Box nötig.')) app.resetCertificate();
+      });
+    }
   }
 
   const links = [...document.querySelectorAll('nav[aria-label="Bereiche"] a')];
