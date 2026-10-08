@@ -1,0 +1,32 @@
+# Ein Tag vX.Y.Z erzeugt ein GitHub-Release mit dem App-Paket phoniebox-X.Y.Z.tar.gz.
+# Der Desktop-Installer lädt daraus unter Updates die neueste Version.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Tests
+        run: |
+          pip install -r requirements.txt
+          python -m pytest -q
+      - name: Paket bauen
+        run: scripts/build-package.sh "$GITHUB_REF_NAME"
+      - name: Release veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" dist/phoniebox-*.tar.gz dist/phoniebox-*.tar.gz.sha256 \
+            --title "Phoniebox $version" --notes-file dist/notes.md --verify-tag
