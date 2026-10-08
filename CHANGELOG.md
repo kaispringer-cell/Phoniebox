@@ -5,6 +5,11 @@
 - In der Android-App steht das App-Menü (Status der Box, Benachrichtigungen, Player in der Leiste, Status prüfen, Neu laden, Zertifikat) als Abschnitt „Phoniebox-App“ direkt in der Leiste statt in einem eigenen Dialog. Probleme der Box zeigt ein roter Zähler am App-Symbol. Im Browser erscheint der Abschnitt nicht.
 - Test angepasst. Installer 2.8.18 weiterverwenden.
 
+# 1.22.1
+
+- „Im Player steht in grün Willkommen. Dort soll, sobald ein Song gespielt wird, der Bandname erscheinen.“ – Die grüne Zeile über dem Titel zeigt jetzt den Interpreten, solange etwas läuft oder pausiert ist (bei Radio „Radio“). Die Zeile unter dem Titel entfällt dann, damit der Name nicht doppelt steht. Läuft nichts, steht dort wieder „Willkommen“.
+- 1 neuer Test. Installer 2.8.18 weiterverwenden.
+
 # 1.22.0
 
 - Für den Player der Android-App 1.3.0 in der Benachrichtigungsleiste: Neuer Endpunkt `GET /api/csrf`, über den die App das Token ihrer Sitzung holt, um Start, Pause, Zurück und Weiter ohne geöffnete Seite zu senden. Andere Webseiten können die Antwort nicht lesen.
